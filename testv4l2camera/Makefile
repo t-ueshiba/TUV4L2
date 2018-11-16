@@ -23,7 +23,8 @@ else
 endif
 CCFLAGS		= $(CFLAGS)
 
-LIBS		= -lTUV4L2++ -lTUTools++ $(shell pkg-config gtk+-2.0 --libs)
+LIBS		= -lTUV4L2++ -lTUTools++ \
+		  -lyaml-cpp $(shell pkg-config gtk+-2.0 --libs)
 LINKER		= $(CXX)
 
 BINDIR		= $(PREFIX)/bin

@@ -29,15 +29,15 @@ main(int argc, char* argv[])
   // Main job.
     try
     {
-	extern int		optind;
-	Array<V4L2Camera>	cameras(argc - optind);
+	extern int	optind;
+	V4L2CameraArray	cameras(argc - optind);
 	for (auto& camera : cameras)
 	    camera.initialize(argv[optind++]);
 
 	if (cameras.size() == 0)
 	    throw std::runtime_error("One or more cameras must be specified!!");
 
-	v::MyCmdWindow<Array<V4L2Camera>, u_char> myWin(vapp, cameras, maxSkew);
+	v::MyCmdWindow<V4L2CameraArray, u_char> myWin(vapp, cameras, maxSkew);
 	vapp.run();
 
 	std::cout << cameras;
