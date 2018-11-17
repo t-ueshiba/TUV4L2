@@ -29,7 +29,7 @@ file(GLOB headers TU/*.h)
 
 add_library(TUV4L2++ SHARED ${sources} ${headers})
 
-target_link_libraries(TUV4L2++ TUTools++)
+target_link_libraries(TUV4L2++ TUTools++ yaml-cpp)
 
 install(TARGETS TUV4L2++ LIBRARY DESTINATION lib)
 

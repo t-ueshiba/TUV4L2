@@ -1788,8 +1788,9 @@ operator <<(YAML::Emitter& emitter, const V4L2Camera& camera)
 
   // デバイス名を書き出す
     emitter << YAML::Key << "device" << YAML::Value << camera.dev();
-    
-  // 画素フォーマットと画像サイズを書き出す．
+
+  // フォーマットを書き出す．
+    emitter << YAML::Key << "format" << YAML::Value << YAML::BeginMap;
     const auto	pixelFormat = camera.pixelFormat();
     char	fourcc[5];
     fourcc[0] =	 pixelFormat	    & 0xff;
@@ -1797,15 +1798,14 @@ operator <<(YAML::Emitter& emitter, const V4L2Camera& camera)
     fourcc[2] = (pixelFormat >> 16) & 0xff;
     fourcc[3] = (pixelFormat >> 24) & 0xff;
     fourcc[4] = '\0';
-    emitter << YAML::Key << "format" << YAML::Value << fourcc
-	    << YAML::Key << "width"  << YAML::Value << camera.width()
-	    << YAML::Key << "height" << YAML::Value << camera.height();
-    
-  // フレームレートを書き出す．
+    emitter << YAML::Key << "pixel_format" << YAML::Value << fourcc
+	    << YAML::Key << "width"	   << YAML::Value << camera.width()
+	    << YAML::Key << "height"	   << YAML::Value << camera.height();
     u_int	fps_n, fps_d;
     camera.getFrameRate(fps_n, fps_d);
     emitter << YAML::Key << "fps_n" << YAML::Value << fps_n
-	    << YAML::Key << "fps_d" << YAML::Value << fps_d;
+	    << YAML::Key << "fps_d" << YAML::Value << fps_d
+	    << YAML::EndMap;
 
     const auto	availableFeatures = camera.availableFeatures();
     if (availableFeatures.first != availableFeatures.second)
@@ -1838,24 +1838,28 @@ const YAML::Node&
 operator >>(const YAML::Node& node, V4L2Camera& camera)
 {
   // デバイス名を読み込んでカメラを初期化する.
-    auto	s = node["device"].as<std::string>();	// デバイス名
-    camera.initialize(s.c_str());
-    
+    if (const auto& dev = node["device"])
+	camera.initialize(dev.as<std::string>().c_str());
+    else
+	throw std::runtime_error("operator >>(const YAML::Node&, V4L2Camera&): \"device\" entry not found!!");
+
   // 画素フォーマット，画像サイズ，フレームレートを読み込んでカメラに設定する．
-    s = node["foramt"].as<std::string>();		// 画素フォーマット
-    const auto	pixelFormat
-	= V4L2Camera::uintToPixelFormat( s[0]	     | (s[1] <<  8) |
-					(s[2] << 16) | (s[3] << 24));
-    const auto	w     = node["width" ].as<size_t>();	// 画像の幅
-    const auto	h     = node["height"].as<size_t>();	// 画像の高さ
-    const auto	fps_n = node["fps_n" ].as<u_int >();	// フレームレートの分子
-    const auto	fps_d = node["fps_d" ].as<u_int >();	// フレームレートの分母
-    camera.setFormat(pixelFormat, w, h, fps_n, fps_d);
-    
-    if (node["features"])
+    if (const auto& fmt = node["format"])
     {
-      // 各カメラ属性を読み込んでカメラに設定する．
-	for (const auto& feature : node["features"])
+	const auto	s = fmt["pixel_format"].as<std::string>();
+	const auto	pixelFormat = V4L2Camera::uintToPixelFormat(
+					 s[0]	     | (s[1] <<  8) |
+					(s[2] << 16) | (s[3] << 24));
+	const auto	width  = fmt["width" ].as<size_t>();
+	const auto	height = fmt["height"].as<size_t>();
+	const auto	fps_n  = fmt["fps_n" ].as<u_int >();
+	const auto	fps_d  = fmt["fps_d" ].as<u_int >();
+	camera.setFormat(pixelFormat, width, height, fps_n, fps_d);
+    }
+    
+  // 各カメラ属性を読み込んでカメラに設定する．
+    if (const auto& features = node["features"])
+	for (const auto& feature : features)
 	    for (const auto& featureName : featureNames)
 		if (feature.first.as<std::string>() == featureName.name)
 		{
@@ -1863,8 +1867,7 @@ operator >>(const YAML::Node& node, V4L2Camera& camera)
 				    feature.second.as<int>());
 		    break;
 		}
-    }
-
+    
     return node;
 }
     
