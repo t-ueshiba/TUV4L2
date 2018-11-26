@@ -28,13 +28,12 @@ include_directories(
     ${Boost_INCLUDE_DIRS}
     ${YAML-CPP_INCLUDE_DIRS}
 )
-link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 file(GLOB sources *.cc)
-add_library(${CMAKE_PROJECT_NAME} SHARED ${sources})
-target_link_libraries(${CMAKE_PROJECT_NAME} TUTools++ ${YAML-CPP_LIBRARIES})
+add_library(${PROJECT_NAME} SHARED ${sources})
+target_link_libraries(${PROJECT_NAME} TUTools++ ${YAML-CPP_LIBRARIES})
 
-install(TARGETS ${CMAKE_PROJECT_NAME} LIBRARY DESTINATION lib)
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
 
 add_subdirectory(TU)
 add_subdirectory(testv4l2camera)
