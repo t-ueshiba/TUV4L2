@@ -14,10 +14,6 @@ set(CMAKE_CXX_FLAGS_DEBUG	"-g")
 set(CMAKE_BUILD_TYPE		Release)
 add_definitions(-DNDEBUG)
 
-if(NOT EXISTS "/usr/include/linux/videodev2.h")
-    return()
-endif()
-
 find_package(PkgConfig REQUIRED)
 find_package(Boost REQUIRED)
 pkg_check_modules(YAML-CPP REQUIRED yaml-cpp)
@@ -39,3 +35,10 @@ install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
 
 add_subdirectory(TU)
 add_subdirectory(testv4l2camera)
+
+option(BUILD_TUV4L2PP_TEST_PROGRAMS "Building test programs for TUV4L2++" OFF)
+
+if(BUILD_TUV4L2PP_TEST_PROGRAMS)
+  add_subdirectory(testcam)
+  add_subdirectory(testcam2)
+endif()
