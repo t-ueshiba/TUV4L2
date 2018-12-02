@@ -2,20 +2,11 @@
  *  $Id: MyV4L2Camera.h,v 1.8 2012-08-29 19:35:49 ueshiba Exp $
  */
 #include <gtk/gtk.h>
+#include <vector>
 #include "TU/V4L2++.h"
 
 namespace TU
 {
-/*!
-  RGB カラー画像の画素を表す構造体．
-*/
-struct MyRGB
-{
-    u_char	r;	//!< 赤
-    u_char	g;	//!< 青
-    u_char	b;	//!< 緑
-};
-
 /************************************************************************
 *  class MyV4L2Camera							*
 ************************************************************************/
@@ -28,7 +19,6 @@ class MyV4L2Camera : public V4L2Camera
 {
   public:
     MyV4L2Camera(const char* dev)					;
-    ~MyV4L2Camera()							;
 
   //! 画像の表示領域となるキャンバスを返す．
     GtkWidget*		canvas()				const	;
@@ -46,8 +36,8 @@ class MyV4L2Camera : public V4L2Camera
     
   private:
     GtkWidget* const	_canvas;	// 画像を表示する領域
-    u_char*		_buf;		// 入力画像用バッファ
-    MyRGB*		_rgb;		// RGB カラー画像(表示用)バッファ
+    std::vector<u_char>	_buf;		// 入力画像用バッファ
+    std::vector<RGB>	_rgb;		// RGB カラー画像(表示用)バッファ
 };
 
 inline GtkWidget*
