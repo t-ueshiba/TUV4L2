@@ -22,7 +22,7 @@ class V4L2CameraArray : public Array<V4L2Camera>
 {
   public:
   //! デフォルトのカメラ名
-    static constexpr const char*	DEFAULT_CAMERA_NAME = "V4L2Camera";
+    static constexpr const char*	DEFAULT_CAMERA_NAME = "V4L2Cameras";
 
   public:
     explicit		V4L2CameraArray(size_t ncameras=0)		;

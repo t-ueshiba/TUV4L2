@@ -7,7 +7,7 @@
 namespace TU
 {
 #ifndef TUV4L2PP_CONF_DIR
-#  define TUV4L2PP_CONF_DIR	"/usr/local/etc/cameras"
+#  define TUV4L2PP_CONF_DIR	"/usr/local/etc"
 #endif
     
 /************************************************************************

@@ -12,8 +12,7 @@ set(CMAKE_CXX_EXTENSIONS	OFF)
 set(CMAKE_CXX_FLAGS_RELEASE	"-Wall -O3")
 set(CMAKE_CXX_FLAGS_DEBUG	"-g")
 set(CMAKE_BUILD_TYPE		Release)
-add_definitions(-DNDEBUG
-		-DTUV4L2PP_CONF_DIR="${CMAKE_INSTALL_PREFIX}/etc/cameras")
+add_definitions(-DNDEBUG -DTUV4L2PP_CONF_DIR="${CMAKE_INSTALL_PREFIX}/etc")
 
 find_package(PkgConfig REQUIRED)
 find_package(Boost REQUIRED)
