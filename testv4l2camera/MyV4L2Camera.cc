@@ -8,6 +8,8 @@
 
 namespace TU
 {
+GtkWidget*	createCommands(MyV4L2Camera& camera)			;
+
 /************************************************************************
 *  static functions							*
 ************************************************************************/
@@ -299,6 +301,41 @@ MyV4L2Camera::allocateBuffers()
   // 指定したフォーマットに合わせてcanvasの大きさを変更する．
     gtk_drawing_area_size(GTK_DRAWING_AREA(_canvas), width(), height());
     gtk_widget_show(_canvas);
+}
+
+//! コマンドボタンのコンテナとその親ウィジェットを記録する
+/*!
+  フォーマット変更のコールバック用にコマンド類とその親ウィジェットを記録する．
+  カメラのフォーマットが変更されると，サポートされる機能も変わる可能性がある．
+  \param parent 親ウィジェット
+  \param commands コマンド類のコンテナウィジェット
+ */
+void
+MyV4L2Camera::setCommands(GtkWidget* commands, GtkWidget* parent)
+{
+    _commands  = commands;
+    _comParent = parent;
+    return;
+}
+
+//! 現在のカメラの状態に応じてコマンドのコンテナウィジェットを更新する
+/*!
+  カメラを制御するためのコマンドボタンを一新する．
+  カメラのフォーマットが変更されると，サポートされる機能も変わる可能性がある．
+ */
+void
+MyV4L2Camera::refreshCommands()
+{
+    const auto	table = _comParent;
+    const auto	dead  = _commands;
+    assert(table != 0 && (dead != 0));
+    _commands = createCommands(*this);
+    gtk_table_attach(GTK_TABLE(table), _commands,
+		     1, 2, 1, 2, GTK_SHRINK, GTK_SHRINK, 5, 0);
+  // commandsはGtkTableの1,2,1,2に配置する
+    gtk_widget_show_all(table);
+    gtk_widget_destroy(dead);
+    return;
 }
 
 }

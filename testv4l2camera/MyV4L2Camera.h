@@ -30,14 +30,20 @@ class MyV4L2Camera : public V4L2Camera
     void		idle()						;
     void		draw()						;
     std::ostream&	save(std::ostream& out)			const	;
-
+    void		setCommands(GtkWidget* commands,
+				    GtkWidget* parent)			;
+    void		refreshCommands()				;
+    
   private:
     void		allocateBuffers()				;
     
   private:
-    GtkWidget* const	_canvas;	// 画像を表示する領域
+    GtkWidget*		_canvas;	// 画像を表示する領域
     std::vector<u_char>	_buf;		// 入力画像用バッファ
     std::vector<RGB>	_rgb;		// RGB カラー画像(表示用)バッファ
+
+    GtkWidget*		_commands;
+    GtkWidget*		_comParent;
 };
 
 inline GtkWidget*

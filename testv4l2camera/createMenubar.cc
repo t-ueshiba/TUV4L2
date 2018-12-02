@@ -122,6 +122,16 @@ CBsetROI(GtkMenuItem*, gpointer userdata)
     }
 }
     
+//! 一時的にウィンドウを隠すためのコールバック関数．
+/*!
+  \param userdata	表示領域の親ウィジェット
+*/
+static void
+CBclose(GtkMenuItem*, gpointer userdata)
+{
+    gtk_widget_hide(GTK_WIDGET(userdata));
+}
+
 /************************************************************************
 *  global functions							*
 ************************************************************************/
@@ -133,7 +143,7 @@ CBsetROI(GtkMenuItem*, gpointer userdata)
   \return		生成されたメニューバー
 */
 GtkWidget*
-createMenubar(MyV4L2Camera& camera)
+createMenubar(MyV4L2Camera& camera, GtkWidget* showable)
 {
     GtkWidget*	menubar	= gtk_menu_bar_new();
 
@@ -143,10 +153,20 @@ createMenubar(MyV4L2Camera& camera)
     gtk_signal_connect(GTK_OBJECT(item), "activate",
 		       GTK_SIGNAL_FUNC(CBsave), &camera);
     gtk_menu_append(GTK_MENU(menu), item);
-    item = gtk_menu_item_new_with_label("Quit");
-    gtk_signal_connect(GTK_OBJECT(item), "activate",
-		       GTK_SIGNAL_FUNC(CBexit), &camera);
-    gtk_menu_append(GTK_MENU(menu), item);
+    if (showable == NULL)
+    {
+	item = gtk_menu_item_new_with_label("Quit");
+	gtk_signal_connect(GTK_OBJECT(item), "activate",
+			   GTK_SIGNAL_FUNC(CBexit), &camera);
+	gtk_menu_append(GTK_MENU(menu), item);
+    }
+    else
+    {
+	item = gtk_menu_item_new_with_label("Close");
+	gtk_signal_connect(GTK_OBJECT(item), "activate",
+			   GTK_SIGNAL_FUNC(CBclose), showable);
+	gtk_menu_append(GTK_MENU(menu), item);
+    }
     item = gtk_menu_item_new_with_label("File");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), menu);
     gtk_menu_bar_append(GTK_MENU_BAR(menubar), item);
