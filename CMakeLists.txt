@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 3.0)
 project(TUV4L2++)
 
 if(COMMAND cmake_policy)
@@ -12,7 +12,8 @@ set(CMAKE_CXX_EXTENSIONS	OFF)
 set(CMAKE_CXX_FLAGS_RELEASE	"-Wall -O3")
 set(CMAKE_CXX_FLAGS_DEBUG	"-g")
 set(CMAKE_BUILD_TYPE		Release)
-add_definitions(-DNDEBUG -DV4L2_CONF_DIR="${CMAKE_INSTALL_PREFIX}/etc")
+add_definitions(-DNDEBUG
+		-DTUV4L2PP_CONF_DIR="${CMAKE_INSTALL_PREFIX}/etc/cameras")
 
 find_package(PkgConfig REQUIRED)
 find_package(Boost REQUIRED)

@@ -6,8 +6,8 @@
 
 namespace TU
 {
-#ifndef V4L2_CONF_DIR
-#  define V4L2_CONF_DIR	"/usr/local/etc/cameras"
+#ifndef TUV4L2PP_CONF_DIR
+#  define TUV4L2PP_CONF_DIR	"/usr/local/etc/cameras"
 #endif
     
 /************************************************************************
@@ -29,7 +29,7 @@ V4L2CameraArray::V4L2CameraArray(size_t ncameras)
 void
 V4L2CameraArray::restore(const char* name)
 {
-    _name = std::string(V4L2_CONF_DIR) + '/' + name;
+    _name = std::string(TUV4L2PP_CONF_DIR) + '/' + name;
     
   // 設定ファイルのfull path名を生成し, ファイルをオープンする.
     std::ifstream	in(configFile().c_str());
