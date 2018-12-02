@@ -20,6 +20,7 @@
 /*
  * NOTE: このファイルはXPM形式の画像データを含んでいる
  */
+#include "TU/V4L2CameraArray.h"
 #include "MyV4L2CameraArray.h"
 #include <iomanip>
 #include <fstream>
@@ -27,6 +28,10 @@
 
 namespace TU
 {
+#ifndef TUV4L2CPP_CONF_DIR
+#  define TUV4L2CPP_CONF_DIR	"/usr/local/etc"
+#endif
+    
 /************************************************************************
 *  local data                                                           *
 ************************************************************************/
@@ -392,8 +397,11 @@ CBsave(GtkMenuItem*, gpointer userdata)
 				  (GtkSignalFunc)gtk_widget_destroy,
 				  GTK_OBJECT(filesel));
 
-	char	filename[] = "V4L2Camera.conf";
-	gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel), filename);
+	const auto	filename = std::string(TUV4L2PP_CONF_DIR) + '/'
+				 + V4L2CameraArray::DEFAULT_CAMERA_NAME
+				 + ".conf";
+	gtk_file_selection_set_filename(GTK_FILE_SELECTION(filesel),
+					filename.c_str());
 	gtk_widget_show(filesel);
 	gtk_main();
     }
