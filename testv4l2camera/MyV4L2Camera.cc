@@ -57,9 +57,11 @@ CBexpose(GtkWidget* widget, GdkEventExpose* event, gpointer userdata)
 */
 MyV4L2Camera::MyV4L2Camera(const char* dev)
     :V4L2Camera(dev),
-     _canvas(gtk_drawing_area_new()),
      _buf(),
-     _rgb()
+     _rgb(),
+     _canvas(gtk_drawing_area_new()),
+     _commands(nullptr),
+     _comParent(nullptr)
 {
     gdk_rgb_init();
     gtk_signal_connect(GTK_OBJECT(_canvas), "expose_event",
