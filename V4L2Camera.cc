@@ -180,6 +180,9 @@ V4L2Camera::initialize(const char* dev)
 {
     using namespace	std;
 
+    if (dev == _dev)
+	return *this;
+    
     if (_fd >= 0)
     {
 	continuousShot(false);
