@@ -180,11 +180,11 @@ V4L2Camera::initialize(const char* dev)
 {
     using namespace	std;
 
-    if (dev == _dev)
-	return *this;
-    
     if (_fd >= 0)
     {
+	if (_dev == dev)
+	    return *this;
+    
 	continuousShot(false);
 	close(_fd);
     }
@@ -329,7 +329,7 @@ V4L2Camera::setFormat(PixelFormat pixelFormat, size_t width, size_t height,
 
   // 画素フォーマットと画像サイズを設定
   ok:
-    const bool	cont = inContinuousShot();
+    const auto	cont = inContinuousShot();
     continuousShot(false);	// 画像出力を止める
 
     unmapBuffers();
@@ -1846,6 +1846,9 @@ operator >>(const YAML::Node& node, V4L2Camera& camera)
     else
 	throw std::runtime_error("operator >>(const YAML::Node&, V4L2Camera&): \"device\" entry not found!!");
 
+    const auto	cont = camera.inContinuousShot();
+    camera.continuousShot(false);
+    
   // 画素フォーマット，画像サイズ，フレームレートを読み込んでカメラに設定する．
     if (const auto& fmt = node["format"])
     {
@@ -1870,6 +1873,8 @@ operator >>(const YAML::Node& node, V4L2Camera& camera)
 				    feature.second.as<int>());
 		    break;
 		}
+
+    camera.continuousShot(cont);
     
     return node;
 }
