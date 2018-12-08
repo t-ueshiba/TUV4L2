@@ -16,32 +16,26 @@ namespace TU
 constexpr const char*	V4L2CameraArray::DEFAULT_CAMERA_NAME;
     
 //! 空のVideo for Linux v.2カメラの配列を生成する.
-V4L2CameraArray::V4L2CameraArray(size_t ncameras)
-    :Array<V4L2Camera>(ncameras), _name()
+/*!
+  \param name		カメラ名
+*/
+V4L2CameraArray::V4L2CameraArray(const char* name)
+    :Array<V4L2Camera>(), _name(name)
 {
 }
     
 //! 設定ファイルを読み込んでVideo for Linux v.2カメラの配列を初期化する.
-/*!
-  \param name		カメラ名
-  \param dirs		カメラ設定ファイルの探索ディレクトリ名の並び
-*/
 void
-V4L2CameraArray::restore(const char* name)
+V4L2CameraArray::restore()
 {
-    _name = std::string(TUV4L2PP_CONF_DIR) + '/' + name;
-    
-  // 設定ファイルのfull path名を生成し, ファイルをオープンする.
     std::ifstream	in(configFile().c_str());
     if (!in)
 	throw std::runtime_error("V4L2CameraArray::restore(): cannot open " +
 				 configFile());
-    
-  // 設定ファイルに記された全カメラを生成する.
     in >> *this;
 }
 
-//! 設定ファイルにVideo for Linux v.2カメラ配列の設定を書き込む.
+//! Video for Linux v.2カメラの配列の設定を設定ファイルに書き込む.
 void
 V4L2CameraArray::save() const
 {
@@ -49,10 +43,29 @@ V4L2CameraArray::save() const
     if (!out)
 	throw std::runtime_error("V4L2CameraArray::save(): cannot open " +
 				 configFile());
-
     out << *this;
 }
     
+//! カメラ設定ファイル名を返す.
+/*!
+  \return	カメラ設定ファイル名
+*/
+std::string
+V4L2CameraArray::configFile() const
+{
+    return std::string(TUV4L2PP_CONF_DIR) + '/' + _name + ".conf";
+}
+    
+//! キャリブレーションファイル名を返す.
+/*!
+  \return	キャリブレーションファイル名
+*/
+std::string
+V4L2CameraArray::calibFile() const
+{
+    return std::string(TUV4L2PP_CONF_DIR) + '/' + _name + ".calib";
+}
+
 /************************************************************************
 *  global functions							*
 ************************************************************************/
