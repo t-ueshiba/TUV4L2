@@ -51,12 +51,12 @@ usage(const char* s)
 {
     using namespace	std;
     
-    cerr << "\nControl a Video for Linux v.2 digital camera.\n"
+    cerr << "\nControl Video for Linux v.2 digital cameras.\n"
 	 << endl;
-    cerr << " Usage: " << s << " [-d <device>]"
+    cerr << " Usage: " << s << " [<device>]"
          << endl;
     cerr << " arguments.\n"
-         << "  -d <device>  device file of the camera (default: /dev/video0)\n"
+         << "  <device>  device file of the camera\n"
          << endl;
 }
 
@@ -68,7 +68,7 @@ static void
 testV4L2camera(const char* dev)
 {
     MyV4L2Camera    camera(dev);	// カメラを開く．
-
+    
     const auto	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "V4L2 camera controller");
     gtk_window_set_policy(GTK_WINDOW(window), FALSE, FALSE, TRUE);
@@ -98,6 +98,7 @@ static void
 testV4L2cameras()
 {
     MyV4L2CameraArray	cameras;
+    
     const auto	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "V4L2 camera controller");
     gtk_widget_set_usize(GTK_WIDGET(window), 450, 280);

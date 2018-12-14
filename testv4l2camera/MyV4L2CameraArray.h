@@ -87,15 +87,14 @@ class MyV4L2CameraArray
     void		swap(size_t i, size_t j)			;
 
   //! カメラを追加する
-    void		push_back(MyV4L2Camera&& camera)		;
+    void		emplace_back(const char* dev)			;
 
   private:
     std::vector<MyV4L2Camera>	_cameras;
     
-    GtkWidget* const		_canvas;		// リストの表示領域
-    GtkWidget*			_list;			// V4L2カメラのリスト
-    GtkWidget*			_filesel;		// ファイル選択画面
-    GtkWidget*			_speedPreference;	// 転送速度選択ウィジェット
+    GtkWidget* const		_canvas;	// リストの表示領域
+    GtkWidget*			_list;		// V4L2カメラのリスト
+    GtkWidget*			_filesel;	// ファイル選択画面
 };
 
 inline GtkWidget*
