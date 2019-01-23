@@ -227,10 +227,10 @@ V4L2Camera::initialize(const char* dev)
     u_int	fps_n, fps_d;
     getFrameRate(fps_n, fps_d);
 
-  // カメラに現在セットされている画素フォーマットが本ライブラリで未サポートならば，
-  // サポートされている1番目の画素フォーマットにセットし，画像サイズをそのフォー
-  // マットにおける最大値にする．また，フレームレートをその画像サイズにおける最大値
-  // にする．
+  // カメラに現在セットされている画素フォーマットが本ライブラリで未サポート
+  // ならば，サポートされている1番目の画素フォーマットにセットし，画像サイズ
+  // をそのフォーマットにおける最大値にする．また，フレームレートをその画像
+  // サイズにおける最大値にする．
     if (_pixelFormat == UNKNOWN_PIXEL_FORMAT)
     {
 	_pixelFormat = *pixelFormats.first;
@@ -327,7 +327,12 @@ V4L2Camera::setFormat(PixelFormat pixelFormat, size_t width, size_t height,
 	}
     }
     
-    throw invalid_argument("V4L2Camera::setFormat(): illegal combination of pixel format, frame size and frame rate!! ");
+    throw invalid_argument("V4L2Camera::setFormat(): illegal combination of pixel format["
+			   + getName(pixelFormat) + "], frame size["
+			   + std::to_string(width) + 'x'
+			   + std::to_string(height) + "] and frame rate["
+			   + std::to_string(fps_n) + '/'
+			   + std::to_string(fps_d) + "]!! ");
 
   // 画素フォーマットと画像サイズを設定
   ok:
@@ -344,7 +349,11 @@ V4L2Camera::setFormat(PixelFormat pixelFormat, size_t width, size_t height,
     fmt.fmt.pix.pixelformat = pixelFormat;
     fmt.fmt.pix.field       = V4L2_FIELD_ANY;
     if (ioctl(VIDIOC_S_FMT, &fmt))
-	throw runtime_error(string("V4L2Camera::setFormat(): VIDIOC_S_FMT failed!! ") + strerror(errno));
+	throw runtime_error("V4L2Camera::setFormat(): VIDIOC_S_FMT failed for pixel format["
+			    + getName(pixelFormat) + "] and frame size["
+			    + std::to_string(width) + 'x'
+			    + std::to_string(height) + "]!! "
+			    + strerror(errno));
     _width	 = fmt.fmt.pix.width;
     _height	 = fmt.fmt.pix.height;
     _pixelFormat = uintToPixelFormat(fmt.fmt.pix.pixelformat);
@@ -356,7 +365,10 @@ V4L2Camera::setFormat(PixelFormat pixelFormat, size_t width, size_t height,
     streamparm.parm.capture.timeperframe.numerator   = fps_n;
     streamparm.parm.capture.timeperframe.denominator = fps_d;
     if (ioctl(VIDIOC_S_PARM, &streamparm))
-	throw runtime_error(string("V4L2Camera::setFormat(): VIDIOC_S_PARM failed!! ") + strerror(errno));
+	throw runtime_error("V4L2Camera::setFormat(): VIDIOC_S_PARM failed for frame rate["
+			    + std::to_string(fps_n) + '/'
+			    + std::to_string(fps_d) + "]!! "
+			    + strerror(errno));
 
   // バッファをマップ
     mapBuffers(NB_BUFFERS);
@@ -415,7 +427,12 @@ V4L2Camera::setROI(size_t u0, size_t v0, size_t width, size_t height)
     crop.c.width  = width;
     crop.c.height = height;
     if (ioctl(VIDIOC_S_CROP, &crop))
-	throw runtime_error(string("V4L2Camera::setROI(): VIDIOC_S_CROP failed!! ") + strerror(errno));
+	throw runtime_error("V4L2Camera::setROI(): VIDIOC_S_CROP failed for upper-left corner["
+			    + std::to_string(u0) + ','
+			    + std::to_string(v0) + "] and size["
+			    + std::to_string(width) + 'x'
+			    + std::to_string(height) + "]!! "
+			    + strerror(errno));
 
     getROI(u0, v0, _width, _height);
 
@@ -527,20 +544,25 @@ V4L2Camera::setValue(Feature feature, int value)
     const auto&	control = featureToControl(feature);
     
     if (control.flags & V4L2_CTRL_FLAG_READ_ONLY)
-	throw runtime_error("V4L2Camera::setValue(): read only feature!! ");
+	throw runtime_error("V4L2Camera::setValue(): read only feature["
+			    + getName(feature) + "]!!");
 
     if (control.type == V4L2_CTRL_TYPE_BOOLEAN)
 	value = (value ? 1 : 0);
 
     if (!control.range.involves(value))
-	throw out_of_range("V4L2Camera::setValue(): out of range value!! ");
+	throw out_of_range("V4L2Camera::setValue(): out of range value["
+			   + std::to_string(value) + "]!!");
 
     v4l2_control	ctrl;
     memset(&ctrl, 0, sizeof(ctrl));
     ctrl.id    = control.feature;
     ctrl.value = value;
     if (ioctl(VIDIOC_S_CTRL, &ctrl))
-	throw runtime_error(string("V4L2Camera::setValue(): VIDIOC_S_CTRL failed!! ") + strerror(errno));
+	throw runtime_error("V4L2Camera::setValue(): VIDIOC_S_CTRL failed for feature["
+			    + getName(feature) + "] and value["
+			    + std::to_string(value) + "]!! "
+			    + strerror(errno));
     
     return *this;
 }
@@ -558,13 +580,15 @@ V4L2Camera::getValue(Feature feature) const
     const auto&	control = featureToControl(feature);
 
     if (control.flags & V4L2_CTRL_FLAG_WRITE_ONLY)
-	throw runtime_error("V4L2Camera::getValue(): write only feature!! ");
+	throw runtime_error("V4L2Camera::getValue(): write only feature["
+			    + getName(feature) + "]!!");
 
     v4l2_control	ctrl;
     memset(&ctrl, 0, sizeof(ctrl));
     ctrl.id = control.feature;
     if (ioctl(VIDIOC_G_CTRL, &ctrl))
-	throw runtime_error(string("V4L2Camera::getValue(): VIDIOC_G_CTRL failed!! ") + strerror(errno));
+	throw runtime_error("V4L2Camera::getValue(): VIDIOC_G_CTRL failed for feature["
+			    + getName(feature) + "]!! " + strerror(errno));
 
     return ctrl.value;
 }
@@ -611,7 +635,7 @@ V4L2Camera::continuousShot(bool enable)
 	{
 	    int	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	    if (ioctl(VIDIOC_STREAMOFF, &type))
-		throw runtime_error(string("V4L2Camera::stopContinuousShot(): VIDIOC_STREAMOFF failed!! ") + strerror(errno));
+		throw runtime_error(string("V4L2Camera::continuousShot(): VIDIOC_STREAMOFF failed!! ") + strerror(errno));
 	    unmapBuffers();
 	    mapBuffers(NB_BUFFERS);
 	}
@@ -1430,7 +1454,8 @@ V4L2Camera::featureToControl(Feature feature) const
 	if (control.feature != UNKNOWN_FEATURE && control.feature == feature)
 	{
 	    if (control.flags & V4L2_CTRL_FLAG_DISABLED)
-		throw runtime_error("V4L2Camera::featureToControl(): disabled feature!! ");
+		throw runtime_error("V4L2Camera::featureToControl(): disabled feature["
+				    + getName(feature) + "]!! ");
 	  /*
 	    if (control.flags & V4L2_CTRL_FLAG_INACTIVE)
 		throw runtime_error("V4L2Camera::featureToControl(): inactive feature!! ");
@@ -1438,7 +1463,8 @@ V4L2Camera::featureToControl(Feature feature) const
 	    return control;
 	}
     
-    throw runtime_error("V4L2Camera::featureToControl(): unknown feature!! ");
+    throw runtime_error("V4L2Camera::featureToControl(): unknown feature["
+			+ getName(feature) + "]!! ");
 
     return _controls[0];
 }
@@ -1868,8 +1894,15 @@ operator >>(const YAML::Node& node, V4L2Camera& camera)
 	    for (const auto& featureName : featureNames)
 		if (feature.first.as<std::string>() == featureName.name)
 		{
-		    camera.setValue(featureName.feature,
-				    feature.second.as<int>());
+		    try
+		    {
+			camera.setValue(featureName.feature,
+					feature.second.as<int>());
+		    }
+		    catch (const std::runtime_error& err)
+		    {
+			std::cerr << err.what() << std::endl;
+		    }
 		    break;
 		}
 
