@@ -150,7 +150,7 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
   // ROI button を生成する．
     button = new QPushButton(tr("Set ROI"), this);
     connect(button, &QPushButton::clicked,
-	    [&camera]()
+	    [this, &camera]()
 	    {
 		try
 		{
@@ -160,9 +160,7 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 		}
 		catch (const std::exception& err)
 		{
-		    QErrorMessage	errMsg;
-		    errMsg.showMessage(tr(err.what()));
-		    errMsg.exec();
+		    QMessageBox::warning(this, tr("Warning"), tr(err.what()));
 		}
 	    });
     _layout->addWidget(button, 0, 2, 1, 1);
@@ -186,7 +184,7 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 					   this);
 		toggle->setCheckable(true);
 		connect(toggle, &QPushButton::toggled,
-			[&camera, feature, toggle](bool enable)
+			[this, &camera, feature, toggle](bool enable)
 			{
 			    try
 			    {
@@ -196,7 +194,8 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 			    {
 				toggle->setChecked(camera.getValue(feature));
 
-				std::cerr << err.what() << std::endl;
+				QMessageBox::critical(this, tr("Error"),
+						      tr(err.what()));
 			    }
 			});
 		toggle->setChecked(camera.getValue(feature));
@@ -248,7 +247,7 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 						     menu);
 		menu->addAction(action);
 		connect(action, &QAction::triggered,
-			[&camera, feature, &menuItem, button]()
+			[this, &camera, feature, &menuItem, button]()
 			{
 			    try
 			    {
@@ -257,7 +256,8 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 			    }
 			    catch (const std::exception& err)
 			    {
-				std::cerr << err.what() << std::endl;
+				QMessageBox::critical(this, tr("Error"),
+						      tr(err.what()));
 			    }
 			});
 

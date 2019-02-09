@@ -13,7 +13,7 @@
 namespace TU
 {
 /************************************************************************
-*  class ROI_Dialog						*
+*  class ROI_Dialog							*
 ************************************************************************/
 ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
     :_u0(0), _v0(0), _width(camera.width()), _height(camera.height())
@@ -26,10 +26,12 @@ ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
 
     int		row = 0;
     auto	layout = new QGridLayout(this);
+    layout->setHorizontalSpacing(4);
+    layout->setVerticalSpacing(2);
 
     auto	label = new QLabel(tr("u0"), this);
     label->setAlignment(Qt::Alignment(Qt::AlignRight | Qt::AlignVCenter));
-    const auto	u0    = new SliderCmd(this);
+    const auto	u0 = new SliderCmd(this);
     u0->setRange(minU0, minU0 + maxWidth - 1, 1);
     u0->setValue(_u0);
     layout->addWidget(label, row, 0, 1, 1);
