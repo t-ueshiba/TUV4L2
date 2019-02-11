@@ -15,11 +15,12 @@ include_directories($(PROJECT_SOURCE_DIR)/../../TUIIDC++/testIIDCcamera2
 
 file(GLOB sources *.cc)
 
-set(moc_headers CmdPane.h SliderCmd.h)
+set(moc_headers CmdPane.h)
 set(moc_sources "")
 QT5_WRAP_CPP(moc_sources ${moc_headers})
 
 add_executable(${PROJECT_NAME} ${sources} ${moc_sources})
-target_link_libraries(${PROJECT_NAME} TUV4L2++ ${Qt5Widgets_LIBRARIES})
+target_link_libraries(
+  ${PROJECT_NAME} TUV4L2++ TUQt++ TUTools++ yaml-cpp ${Qt5Widgets_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)

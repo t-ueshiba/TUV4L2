@@ -19,7 +19,7 @@ main(int argc, char* argv[])
     using	namespace TU;
 
     QApplication		app(argc, argv);
-    MainWindow<V4L2Camera>	mainWindow;
+    qt::MainWindow<V4L2Camera>	mainWindow;
 
     return app.exec();
 }

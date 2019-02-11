@@ -5,8 +5,8 @@
 #include <QMenu>
 #include <boost/foreach.hpp>
 #include "TU/V4L2CameraArray.h"
+#include "TU/qt/Slider.h"
 #include "MainWindow.h"
-#include "SliderCmd.h"
 #include "ROI_Dialog.h"
 
 #ifndef TUV4L2PP_CONF_DIR
@@ -24,6 +24,8 @@ cameraName(const V4L2Camera& camera)
     return QString::fromStdString(camera.dev());
 }
 
+namespace qt
+{
 /************************************************************************
 *  class MainWindow<V4L2Camera>						*
 ************************************************************************/
@@ -41,43 +43,43 @@ MainWindow<V4L2Camera>::defaultConfigFile()
 }
 
 /************************************************************************
-*  class ImageView							*
+*  class CameraWindow<V4L2Camera>					*
 ************************************************************************/
 template <> void
-ImageView::captureAndDisplay(V4L2Camera& camera)
+CameraWindow<V4L2Camera>::captureAndDisplay()
 {
-    switch (camera.pixelFormat())
+    switch (_camera.pixelFormat())
     {
       case V4L2Camera::BGR24:
-	captureAndDisplay(camera, Tag<BGR>());
+	captureRawAndDisplay<BGR>();
 	break;
 
       case V4L2Camera::RGB24:
-	captureAndDisplay(camera, Tag<RGB>());
+	captureRawAndDisplay<RGB>();
 	break;
 
       case V4L2Camera::BGR32:
-	captureAndDisplay(camera, Tag<BGRA>());
+	captureRawAndDisplay<BGRA>();
 	break;
 
       case V4L2Camera::RGB32:
-	captureAndDisplay(camera, Tag<ARGB>());
+	captureRawAndDisplay<ARGB>();
 	break;
 
       case V4L2Camera::GREY:
-	captureAndDisplay(camera, Tag<uint8_t>());
+	captureRawAndDisplay<uint8_t>();
 	break;
 
       case V4L2Camera::Y16:
-	captureAndDisplay(camera, Tag<uint16_t>());
+	captureRawAndDisplay<uint16_t>();
 	break;
 
       case V4L2Camera::YUYV:
-	captureAndDisplay(camera, Tag<YUYV422>());
+	captureRawAndDisplay<YUYV422>();
 	break;
 
       case V4L2Camera::UYVY:
-	captureAndDisplay(camera, Tag<YUV422>());
+	captureRawAndDisplay<YUV422>();
 	break;
 
       case V4L2Camera::SBGGR8:
@@ -86,7 +88,7 @@ ImageView::captureAndDisplay(V4L2Camera& camera)
 #ifdef V4L2_PIX_FMT_SRGGB8
       case V4L2Camera::SRGGB8:
 #endif
-	captureBayerAndDisplay(camera);
+	captureBayerAndDisplay();
 	break;
 
       default:
@@ -210,8 +212,8 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 						  Qt::AlignVCenter));
 		_layout->addWidget(label, row, 0, 1, 1);
 
-		const auto	slider = new SliderCmd(this);
-		connect(slider, &SliderCmd::valueChanged,
+		const auto	slider = new Slider(this);
+		connect(slider, &Slider::valueChanged,
 			[&camera, feature, slider](double val)
 			{
 			    try
@@ -273,4 +275,5 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
     }
 }
 
+}	// namespace qt
 }	// namespace TU

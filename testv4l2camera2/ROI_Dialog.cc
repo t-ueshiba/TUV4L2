@@ -7,10 +7,12 @@
 #include <QMenu>
 #include <QAction>
 #include <QDialogButtonBox>
-#include "SliderCmd.h"
+#include "TU/qt/Slider.h"
 #include "ROI_Dialog.h"
 
 namespace TU
+{
+namespace qt
 {
 /************************************************************************
 *  class ROI_Dialog							*
@@ -31,7 +33,7 @@ ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
 
     auto	label = new QLabel(tr("u0"), this);
     label->setAlignment(Qt::Alignment(Qt::AlignRight | Qt::AlignVCenter));
-    const auto	u0 = new SliderCmd(this);
+    const auto	u0 = new Slider(this);
     u0->setRange(minU0, minU0 + maxWidth - 1, 1);
     u0->setValue(_u0);
     layout->addWidget(label, row, 0, 1, 1);
@@ -40,7 +42,7 @@ ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
 
     label = new QLabel(tr("v0"), this);
     label->setAlignment(Qt::Alignment(Qt::AlignRight | Qt::AlignVCenter));
-    const auto	v0 = new SliderCmd(this);
+    const auto	v0 = new Slider(this);
     v0->setRange(minV0, minV0 + maxHeight - 1, 1);
     v0->setValue(_v0);
     layout->addWidget(label, row, 0, 1, 1);
@@ -49,7 +51,7 @@ ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
 
     label = new QLabel(tr("width"), this);
     label->setAlignment(Qt::Alignment(Qt::AlignRight | Qt::AlignVCenter));
-    const auto	width = new SliderCmd(this);
+    const auto	width = new Slider(this);
     width->setRange(0, maxWidth, 1);
     width->setValue(_width);
     layout->addWidget(label, row, 0, 1, 1);
@@ -58,14 +60,14 @@ ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
 
     label = new QLabel(tr("height"), this);
     label->setAlignment(Qt::Alignment(Qt::AlignRight | Qt::AlignVCenter));
-    const auto	height = new SliderCmd(this);
+    const auto	height = new Slider(this);
     height->setRange(0, maxHeight, 1);
     height->setValue(_height);
     layout->addWidget(label,  row, 0, 1, 1);
     layout->addWidget(height, row, 1, 1, 1);
     ++row;
 
-    connect(u0, &SliderCmd::valueChanged,
+    connect(u0, &Slider::valueChanged,
 	    [this, maxWidth, width](double val)
 	    {
 		_u0 = size_t(val);
@@ -75,7 +77,7 @@ ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
 		    width->setValue(_width);
 		}
 	    });
-    connect(v0, &SliderCmd::valueChanged,
+    connect(v0, &Slider::valueChanged,
 	    [this, maxHeight, height](double val)
 	    {
 		_v0 = size_t(val);
@@ -85,7 +87,7 @@ ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
 		    height->setValue(_height);
 		}
 	    });
-    connect(width, &SliderCmd::valueChanged,
+    connect(width, &Slider::valueChanged,
 	    [this, maxWidth, u0](double val)
 	    {
 		_width = size_t(val);
@@ -95,7 +97,7 @@ ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
 		    u0->setValue(_u0);
 		}
 	    });
-    connect(height, &SliderCmd::valueChanged,
+    connect(height, &Slider::valueChanged,
 	    [this, maxHeight, v0](double val)
 	    {
 		_height = size_t(val);
@@ -128,4 +130,5 @@ ROI_Dialog::getROI(const V4L2Camera& camera,
     height = dialog._height;
 }
 
+}	// namespace qt
 }	// namespace TU

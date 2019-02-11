@@ -1,1 +1,0 @@
-../../TUIIDC++/testIIDCcamera2/SliderCmd.cc
