@@ -1,13 +1,15 @@
 /*!
  *  \file	Dialog.h
  */
-#ifndef TU_ROI_DIALOG_H
-#define TU_ROI_DIALOG_H
+#ifndef TU_QT_ROI_DIALOG_H
+#define TU_QT_ROI_DIALOG_H
 
 #include <QDialog>
 #include "TU/V4L2++.h"
 
 namespace TU
+{
+namespace qt
 {
 /************************************************************************
 *  class ROI_Dialog							*
@@ -26,5 +28,6 @@ class ROI_Dialog : public QDialog
     size_t	_u0, _v0, _width, _height;
 };
 
+}	// namespace qt
 }	// namespace TU
 #endif	// !TU_ROI_DIALOG_H
