@@ -20,6 +20,8 @@ namespace qt
 ROI_Dialog::ROI_Dialog(const V4L2Camera& camera)
     :_u0(0), _v0(0), _width(camera.width()), _height(camera.height())
 {
+    setWindowTitle(tr("Set ROI"));
+    
     if (!camera.getROI(_u0, _v0, _width, _height))
 	throw std::runtime_error("No ROI support for this camera." );
 
