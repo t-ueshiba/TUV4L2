@@ -42,7 +42,7 @@ static const gchar*	columnTitles[2] = { "No.", "Camera ID" };
 MyV4L2CameraArray::MyV4L2CameraArray()
     :_canvas(gtk_scrolled_window_new(NULL, NULL)),
      _list(gtk_clist_new_with_titles(2, const_cast<gchar**>(columnTitles))),
-     _filesel(0),_speedPreference(0)
+     _filesel(0)
 {
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(_canvas),
 				   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
@@ -75,56 +75,51 @@ GtkWidget*
 MyV4L2CameraArray::view()
 {
     const auto	selection = GTK_CLIST(_list)->selection;
-    if (selection)
+
+    if (!selection)
+	return nullptr;
+    
+    size_t	index = GPOINTER_TO_INT(selection->data);
+    const auto	userdata = gtk_clist_get_row_data(GTK_CLIST(_list), index);
+    GtkWidget*	subwindow;
+    if (userdata)
     {
-        size_t		index = GPOINTER_TO_INT(selection->data);
-	const auto	userdata = gtk_clist_get_row_data(GTK_CLIST(_list),
-							  index);
-        GtkWidget*	subwindow;
-	if (userdata)
-	{
-	    subwindow = GTK_WIDGET(userdata);
-	}
-	else
-	{
-	    auto&	camera = _cameras[index];
-	    
-	    // カメラ画面を作成し，選択中のリスト項目に付加する．
-#if (GTK_MAJOR_VERSION == 1)
-	    subwindow = gtk_window_new(GTK_WINDOW_DIALOG);
-#else
-	    subwindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#endif
-	    gchar title[30];
-	    g_snprintf(title, 30, "Camera - %s", camera.dev().c_str());
-	    gtk_window_set_title(GTK_WINDOW(subwindow), title);
-	    gtk_window_set_policy(GTK_WINDOW(subwindow), FALSE, FALSE, TRUE);
-	    gtk_signal_connect(GTK_OBJECT(subwindow), "destroy",
-			       GTK_SIGNAL_FUNC(gtk_widget_hide_on_delete),
-			       GTK_OBJECT(subwindow));
-	    gtk_signal_connect(GTK_OBJECT(subwindow), "delete_event",
-			       GTK_SIGNAL_FUNC(gtk_widget_hide_on_delete),
-			       GTK_OBJECT(subwindow));
-	    
-	    auto	table = gtk_table_new(2, 2, FALSE);
-	    auto	commands = createCommands(camera);
-	    camera.setCommands(commands, table);
-	    gtk_container_add(GTK_CONTAINER(subwindow), table);
-	    gtk_table_attach(GTK_TABLE(table), createMenubar(camera, subwindow),
-			     0, 2, 0, 1, GTK_FILL, GTK_SHRINK, 0, 0);
-	    gtk_table_attach(GTK_TABLE(table), commands,
-			     1, 2, 1, 2, GTK_SHRINK, GTK_SHRINK, 5, 0);
-	  // 1,2,1,2に配置: MyV4L2Camera::refreshCommands()
-	    gtk_table_attach(GTK_TABLE(table), camera.canvas(),
-			     0, 1, 1, 2, GTK_SHRINK, GTK_SHRINK, 0, 0);
-
-	    gtk_clist_set_row_data(GTK_CLIST(_list), index, subwindow);
-	}
-	gtk_widget_show_all(GTK_WIDGET(subwindow));
-
-	return GTK_WIDGET(subwindow);
+	subwindow = GTK_WIDGET(userdata);
     }
-    return nullptr;
+    else
+    {
+	auto&	camera = _cameras[index];
+	    
+      // カメラ画面を作成し，選択中のリスト項目に付加する．
+	subwindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gchar title[30];
+	g_snprintf(title, 30, "Camera - %s", camera.dev().c_str());
+	gtk_window_set_title(GTK_WINDOW(subwindow), title);
+	gtk_window_set_policy(GTK_WINDOW(subwindow), FALSE, FALSE, TRUE);
+	gtk_signal_connect(GTK_OBJECT(subwindow), "destroy",
+			   GTK_SIGNAL_FUNC(gtk_widget_hide_on_delete),
+			   GTK_OBJECT(subwindow));
+	gtk_signal_connect(GTK_OBJECT(subwindow), "delete_event",
+			   GTK_SIGNAL_FUNC(gtk_widget_hide_on_delete),
+			   GTK_OBJECT(subwindow));
+	    
+	auto	table = gtk_table_new(2, 2, FALSE);
+	auto	commands = createCommands(camera);
+	camera.setCommands(commands, table);
+	gtk_container_add(GTK_CONTAINER(subwindow), table);
+	gtk_table_attach(GTK_TABLE(table), createMenubar(camera, subwindow),
+			 0, 2, 0, 1, GTK_FILL, GTK_SHRINK, 0, 0);
+	gtk_table_attach(GTK_TABLE(table), commands,
+			 1, 2, 1, 2, GTK_SHRINK, GTK_SHRINK, 5, 0);
+      // 1,2,1,2に配置: MyV4L2Camera::refreshCommands()
+	gtk_table_attach(GTK_TABLE(table), camera.canvas(),
+			 0, 1, 1, 2, GTK_SHRINK, GTK_SHRINK, 0, 0);
+
+	gtk_clist_set_row_data(GTK_CLIST(_list), index, subwindow);
+    }
+    gtk_widget_show_all(GTK_WIDGET(subwindow));
+    
+    return GTK_WIDGET(subwindow);
 }
 
 void
@@ -151,12 +146,10 @@ MyV4L2CameraArray::scan()
     {
 	try
 	{
-	    std::string		dev = std::string("/dev/video")
-				    + char('0' + i);
-	    MyV4L2Camera	camera(dev.c_str());
-	    push_back(std::move(camera));
+	    const auto	dev = std::string("/dev/video") + char('0' + i);
+	    emplace_back(dev.c_str());
 	}
-	catch (std::exception& except)
+	catch (const std::exception& except)
 	{
 	    break;	// このノードはV4L2カメラではなかった．
 	}
@@ -210,18 +203,6 @@ MyV4L2CameraArray::popFileSelection()
 }
 
 void
-MyV4L2CameraArray::setSpeedPreference(GtkWidget* speedPreference)
-{
-    _speedPreference = speedPreference;
-}
-
-GtkWidget*
-MyV4L2CameraArray::getSpeedPreference()	const
-{
-    return _speedPreference;
-}
-
-void
 MyV4L2CameraArray::swap(size_t i, size_t j)
 {
     if ((i + 1 > size()) || (j + 1 > size()))
@@ -229,7 +210,7 @@ MyV4L2CameraArray::swap(size_t i, size_t j)
 
     std::swap(_cameras[i], _cameras[j]);
 
-    // 通し番号は変えず，GUIDとデータを入れ替え．
+  // 通し番号は変えず，GUIDとデータを入れ替え．
     gchar guid[20];
     g_snprintf(guid, 20, "%s", _cameras[i].dev().c_str());
     gtk_clist_set_text(GTK_CLIST(_list), i, 1, guid);
@@ -244,25 +225,25 @@ MyV4L2CameraArray::swap(size_t i, size_t j)
 }
 
 void
-MyV4L2CameraArray::push_back(MyV4L2Camera&& camera)
+MyV4L2CameraArray::emplace_back(const char* dev)
 {
-  // リストに新しいカメラの通し番号とGUIDを追加．
-    const auto	cameraNumber = size();
+  // カメラを追加
+    _cameras.emplace_back(dev);
+
+  // リストに新しいカメラの通し番号とデバイス名を追加．
+    const auto	index = size() - 1;
     gchar*	item[2];
     item[0] = new gchar[10];
     item[1] = new gchar[20];
-    g_snprintf(item[0], 10, "%lu", cameraNumber);
-    g_snprintf(item[1], 20, "%s", camera.dev().c_str());
+    g_snprintf(item[0], 10, "%lu", index);
+    g_snprintf(item[1], 20, "%s",  dev);
     gtk_clist_append(GTK_CLIST(_list), item);
     delete[] item[0];
     delete[] item[1];
 
   // カメラ画面は初期化に時間がかかるので，表示するときに遅延作成する．
     GtkWidget*	window = nullptr;
-    gtk_clist_set_row_data(GTK_CLIST(_list), cameraNumber, window);
-
-  // カメラを追加
-    _cameras.push_back(std::move(camera));
+    gtk_clist_set_row_data(GTK_CLIST(_list), index, window);
 }
 
 }

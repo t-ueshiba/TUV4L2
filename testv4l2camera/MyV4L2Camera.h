@@ -18,7 +18,11 @@ namespace TU
 class MyV4L2Camera : public V4L2Camera
 {
   public:
-    MyV4L2Camera(const char* dev)					;
+			MyV4L2Camera(const char* dev)			;
+			MyV4L2Camera(const MyV4L2Camera& camera)= delete;
+    MyV4L2Camera&	operator =(const MyV4L2Camera&)		= delete;
+			MyV4L2Camera(MyV4L2Camera&& camera)	= default;
+    MyV4L2Camera&	operator =(MyV4L2Camera&&)		= default;
 
   //! 画像の表示領域となるキャンバスを返す．
     GtkWidget*		canvas()				const	;
@@ -38,10 +42,10 @@ class MyV4L2Camera : public V4L2Camera
     void		allocateBuffers()				;
     
   private:
-    GtkWidget*		_canvas;	// 画像を表示する領域
     std::vector<u_char>	_buf;		// 入力画像用バッファ
     std::vector<RGB>	_rgb;		// RGB カラー画像(表示用)バッファ
 
+    GtkWidget*		_canvas;	// 画像を表示する領域
     GtkWidget*		_commands;
     GtkWidget*		_comParent;
 };

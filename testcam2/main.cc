@@ -30,7 +30,8 @@ main(int argc, char* argv[])
     try
     {
 	extern int	optind;
-	V4L2CameraArray	cameras(argc - optind);
+	V4L2CameraArray	cameras;
+	cameras.resize(argc - optind);
 	for (auto& camera : cameras)
 	    camera.initialize(argv[optind++]);
 

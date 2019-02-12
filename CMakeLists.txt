@@ -35,6 +35,7 @@ install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
 
 add_subdirectory(TU)
 add_subdirectory(testv4l2camera)
+add_subdirectory(testv4l2camera2)
 
 option(BUILD_TUV4L2PP_TEST_PROGRAMS "Building test programs for TUV4L2++" OFF)
 
