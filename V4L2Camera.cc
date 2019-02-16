@@ -109,7 +109,7 @@ static constexpr struct
 V4L2Camera::V4L2Camera()
     :_fd(-1), _dev(), _formats(), _controls(),
      _width(0), _height(0), _pixelFormat(UNKNOWN_PIXEL_FORMAT),
-     _buffers(), _current(~0), _inContinuousShot(false), _arrivaltime()
+     _buffers(), _current(NO_DATA), _inContinuousShot(false), _arrivaltime()
 {
 }
     
@@ -120,7 +120,7 @@ V4L2Camera::V4L2Camera()
 V4L2Camera::V4L2Camera(const char* dev)
     :_fd(-1), _dev(), _formats(), _controls(),
      _width(0), _height(0), _pixelFormat(UNKNOWN_PIXEL_FORMAT),
-     _buffers(), _current(~0), _inContinuousShot(false), _arrivaltime()
+     _buffers(), _current(NO_DATA), _inContinuousShot(false), _arrivaltime()
 {
     initialize(dev);
 }
@@ -272,9 +272,11 @@ V4L2Camera::terminate()
     _height		= 0;
     _pixelFormat	= UNKNOWN_PIXEL_FORMAT;
     _buffers.clear();
-    _current		= ~0;
+    _current		= NO_DATA;
     _inContinuousShot	= false;
     _arrivaltime	= steady_clock_t::time_point();
+
+    return *this;
 }
     
 /*
@@ -672,7 +674,7 @@ V4L2Camera::continuousShot(bool enable)
 template <class T> const V4L2Camera&
 V4L2Camera::operator >>(Image<T>& image) const
 {
-    if (_current == ~0)
+    if (_current == NO_DATA)
 	throw std::runtime_error("TU::V4L2Camera::operator >>(): no images snapped!!");
     const auto	img = static_cast<const u_char*>(_buffers[_current].p());
     
@@ -812,7 +814,7 @@ V4L2Camera::operator >>(Image<T>& image) const
 template <class T> const V4L2Camera&
 V4L2Camera::captureRGBImage(Image<T>& image) const
 {
-    if (_current == ~0)
+    if (_current == NO_DATA)
 	throw std::runtime_error("TU::V4L2Camera::captureRGBImage: no images snapped!!");
     const auto	img = static_cast<const u_char*>(_buffers[_current].p());
     
@@ -867,7 +869,7 @@ V4L2Camera::captureRGBImage(Image<T>& image) const
 const V4L2Camera&
 V4L2Camera::captureRaw(void* image) const
 {
-    if (_current == ~0)
+    if (_current == NO_DATA)
 	throw std::runtime_error("V4L2Camera::captureRaw(): no images snapped!!");
     size_t	pixelSize = 1;
     switch (_pixelFormat)
@@ -884,6 +886,8 @@ V4L2Camera::captureRaw(void* image) const
       case BGR32:
       case RGB32:
 	pixelSize = 4;
+	break;
+      default:
 	break;
     }
     
@@ -907,7 +911,7 @@ V4L2Camera::captureRaw(void* image) const
 const V4L2Camera&
 V4L2Camera::captureBayerRaw(void* image) const
 {
-    if (_current == ~0)
+    if (_current == NO_DATA)
 	throw std::runtime_error("V4L2Camera::captureBayerRaw(): no images snapped!!");
 
     const auto	img = static_cast<const u_char*>(_buffers[_current].p());
@@ -1274,7 +1278,7 @@ V4L2Camera::enumerateControls()
     v4l2_queryctrl	ctrl;
     memset(&ctrl, 0, sizeof(ctrl));
 
-    for (int id = 0, ret; (ret = ioctl(id, ctrl)) == 0 || errno != EINVAL; )
+    for (u_int id = 0, ret; (ret = ioctl(id, ctrl)) == 0 || errno != EINVAL; )
 	if (ret)		// ioctlがEINVALでないエラーを返したら...
 	{
 	    if (ctrl.id <= id)	// 次のctrl.idがセットされなかったら(v4l2のbug)
@@ -1497,7 +1501,7 @@ V4L2Camera::unmapBuffers()
     for (size_t i = 0; i < _buffers.size(); ++i)
 	_buffers[i].unmap();
     requestBuffers(0);	// 確保するバッファ数を0にすることによってキューをクリア
-    _current = ~0;	// データが残っていないことを示す
+    _current = NO_DATA;	// データが残っていないことを示す
 }
 
 //! 指定した個数の受信用バッファを確保するように要求する
@@ -1712,8 +1716,10 @@ operator <<(std::ostream& out, const V4L2Camera::Control& control)
 	out << " W/O";
     out << endl;
     if (control.type == V4L2_CTRL_TYPE_MENU)
+    {
 	BOOST_FOREACH (const auto& menuItem, control.menuItems)
 	    out << "    " << menuItem << endl;
+    }
 
     return out;
 }
