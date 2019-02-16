@@ -243,6 +243,8 @@ class V4L2Camera
 	const S&	dereference()				 const	;
     };
 
+    static constexpr u_int	NO_DATA = ~0;
+
   public:
   //! 画素フォーマットを指す反復子
     typedef MemberIterator<PixelFormat, Format>		PixelFormatIterator;
@@ -522,7 +524,7 @@ V4L2Camera::snap()
     _current = dequeueBuffer();		// データが受信されるのを待つ
     enqueueBuffer(_current);		// キューに戻す
 #else
-    if (_current != ~0)			// 以前に受信したバッファがあれば...
+    if (_current != NO_DATA)		// 以前に受信したバッファがあれば...
 	enqueueBuffer(_current);	// キューに戻す
     _current = dequeueBuffer();		// データが受信されるのを待つ
 #endif
@@ -544,9 +546,9 @@ V4L2Camera::snap()
 template <class T> const V4L2Camera&
 V4L2Camera::captureDirectly(Image<T>& image) const
 {
-    if (_current == ~0)
+    if (_current == NO_DATA)
 	throw std::runtime_error("V4L2Camera::captureDirectly(): no images snapped!!");
-    image.resize((T*)_buffers[_current].p(), height(), width());
+    image.resize(static_cast<T*>(_buffers[_current].p()), height(), width());
 
     return *this;
 }
