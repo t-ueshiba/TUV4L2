@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS_DEBUG	"-g")
 set(CMAKE_BUILD_TYPE		Release)
 
 find_package(Qt5Widgets REQUIRED)
-include_directories($(PROJECT_SOURCE_DIR)/../../TUIIDC++/testIIDCcamera2
+include_directories($(PROJECT_SOURCE_DIR)/../../TUIIDC++/testIIDCcamera
 		    ${Qt5Widgets_INCLUDE_DIRS})
 
 file(GLOB sources *.cc)
