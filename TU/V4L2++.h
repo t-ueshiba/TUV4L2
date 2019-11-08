@@ -36,7 +36,7 @@ namespace TU
 class V4L2Camera
 {
   public:
-  //! 出力画像の画素の形式    
+  //! 出力画像の画素の形式
     enum PixelFormat
     {
 	BGR24	= V4L2_PIX_FMT_BGR24,	//!< 24 bits/pix, BGR-8-8-8
@@ -168,12 +168,12 @@ class V4L2Camera
   //! フレームレートの範囲を表す反復子のペア
     typedef std::pair<FrameRateIterator, FrameRateIterator>
 							FrameRateRange;
-    
+
   //! 画像サイズ
     struct FrameSize
     {
 	FrameRateRange		availableFrameRates()		const	;
-	
+
 	Range<size_t>		width;		//!< 画像の幅
 	Range<size_t>		height;		//!< 画像の高さ
 	std::vector<FrameRate>	frameRates;	//!< フレーム間隔
@@ -226,7 +226,7 @@ class V4L2Camera
 	void		unmap()				;
 	const void*	p()			const	{return _p;}
 	size_t		size()			const	{return _size;}
-	
+
       private:
 	void*		_p;
 	size_t		_size;
@@ -259,7 +259,7 @@ class V4L2Camera
     typedef std::chrono::system_clock			clock_t;
   //! 画像到着時刻を記述するクロック
     typedef std::chrono::steady_clock			steady_clock_t;
-    
+
   public:
 			V4L2Camera()					;
 			V4L2Camera(const char* dev)			;
@@ -272,7 +272,7 @@ class V4L2Camera
     const std::string&	dev()					const	;
     V4L2Camera&		initialize(const char* dev="/dev/video0")	;
     V4L2Camera&		terminate()					;
-    
+
   // Format stuffs.
     PixelFormatRange	availablePixelFormats()			const	;
     FrameSizeRange	availableFrameSizes(PixelFormat pixelFormat)
@@ -347,7 +347,7 @@ class V4L2Camera
     u_int		requestBuffers(u_int n)				;
     void		enqueueBuffer(u_int index)		const	;
     u_int		dequeueBuffer()					;
-    
+
     int			ioctl(int request, void* arg)		const	;
     int			ioctl(int id, v4l2_queryctrl& ctrl)	const	;
 
@@ -355,7 +355,7 @@ class V4L2Camera
 	operator <<(std::ostream& out, const Format& format)		;
     friend std::ostream&
 	operator <<(std::ostream& out, const Control& control)		;
-    
+
   private:
     int				_fd;
     std::string			_dev;
@@ -389,7 +389,7 @@ V4L2Camera::availablePixelFormats() const
 {
     return std::make_pair(_formats.begin(), _formats.end());
 }
-    
+
 //! 指定した画素フォーマットのもとでこのカメラで利用できる画像サイズの範囲を取得する
 /*!
   \param pixelFormat	画素フォーマット
@@ -401,7 +401,7 @@ V4L2Camera::availableFrameSizes(PixelFormat pixelFormat) const
     const Format&	format = pixelFormatToFormat(pixelFormat);
     return std::make_pair(format.frameSizes.begin(), format.frameSizes.end());
 }
-    
+
 //! 指定した画素フォーマットに付けられている名前を取得する
 /*!
   \param pixelFormat	画素フォーマット
@@ -439,7 +439,7 @@ V4L2Camera::pixelFormat() const
   \param out		出力ストリーム
   \param pixelFormat	画素フォーマット
   \return		outで指定した出力ストリーム
-*/ 
+*/
 inline std::ostream&
 V4L2Camera::put(std::ostream& out, PixelFormat pixelFormat) const
 {
@@ -455,7 +455,7 @@ V4L2Camera::availableFeatures() const
 {
     return std::make_pair(_controls.begin(), _controls.end());
 }
-    
+
 //! この属性で利用できるメニュー項目の範囲を取得する
 /*!
   \return	メニュー項目(#MenuItem)を指す定数反復子のペア
@@ -472,7 +472,7 @@ V4L2Camera::availableMenuItems(Feature feature) const
   \param out		出力ストリーム
   \param feature	属性
   \return		outで指定した出力ストリーム
-*/ 
+*/
 inline std::ostream&
 V4L2Camera::put(std::ostream& out, Feature feature) const
 {
@@ -510,11 +510,11 @@ V4L2Camera::inContinuousShot() const
 {
     return _inContinuousShot;
 }
-    
+
 //! カメラから出力される最初の画像を保持する
 /*!
   カメラからの画像出力は, continuousShot() によって行われる. 実際に画像データが
-  受信されるまで, 本関数は呼び出し側に制御を返さない. 
+  受信されるまで, 本関数は呼び出し側に制御を返さない.
   \return	このカメラオブジェクト
  */
 inline V4L2Camera&
@@ -537,10 +537,10 @@ V4L2Camera::snap()
   の中のデータ領域へのポインタをV4L2入力バッファへのポインタに書き換えることに
   よって, 実際にはデータのコピーを行わないことである. テンプレートパラメータTは,
   格納先の画像の画素形式を表す. なお, 本関数を呼び出す前に snap() によって
-  カメラからの画像を保持しておかなければならない. 
-  \param image	画像データを格納する画像オブジェクト. 画像の幅と高さは, 
+  カメラからの画像を保持しておかなければならない.
+  \param image	画像データを格納する画像オブジェクト. 画像の幅と高さは,
 		現在現代ビジネスカメラに設定されている画像サイズに合わせて自動的に
-		設定される. 
+		設定される.
   \return	このカメラオブジェクト
 */
 template <class T> const V4L2Camera&
@@ -600,7 +600,7 @@ V4L2Camera::FrameSize::availableFrameRates() const
 {
     return std::make_pair(frameRates.begin(), frameRates.end());
 }
-    
+
 /************************************************************************
 *  global functions							*
 ************************************************************************/
