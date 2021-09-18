@@ -612,6 +612,15 @@ V4L2Camera::getMinMaxStep(Feature feature, int& min, int& max, int& step) const
     step = control.range.step;
 }
 
+std::string
+V4L2Camera::getShortName(Feature feature)
+{
+    for (const auto& featureName : featureNames)
+	if (feature == featureName.feature)
+	    return featureName.name;
+    return "UNKNOWN";
+}
+
 /*
  *  Capture stuffs.
  */
@@ -1664,13 +1673,8 @@ std::ostream&
 operator <<(std::ostream& out, const V4L2Camera::Format& format)
 {
     out << format.name;
-    char	fourcc[5];
-    fourcc[0] =	 format.pixelFormat	   & 0xff;
-    fourcc[1] = (format.pixelFormat >>  8) & 0xff;
-    fourcc[2] = (format.pixelFormat >> 16) & 0xff;
-    fourcc[3] = (format.pixelFormat >> 24) & 0xff;
-    fourcc[4] = '\0';
-    out << " [id:" << fourcc << ']' << std::endl;
+    out << " [id:" << V4L2Camera::getShortName(format.pixelFormat) << ']'
+	<< std::endl;
 
     BOOST_FOREACH (const auto& frameSize, format.frameSizes)
 	out << "  " << frameSize << std::endl;
@@ -1828,14 +1832,8 @@ operator <<(YAML::Emitter& emitter, const V4L2Camera& camera)
 
   // フォーマットを書き出す．
     emitter << YAML::Key << "format" << YAML::Value << YAML::BeginMap;
-    const auto	pixelFormat = camera.pixelFormat();
-    char	fourcc[5];
-    fourcc[0] =	 pixelFormat	    & 0xff;
-    fourcc[1] = (pixelFormat >>  8) & 0xff;
-    fourcc[2] = (pixelFormat >> 16) & 0xff;
-    fourcc[3] = (pixelFormat >> 24) & 0xff;
-    fourcc[4] = '\0';
-    emitter << YAML::Key << "pixel_format" << YAML::Value << fourcc
+    emitter << YAML::Key << "pixel_format"
+	    << YAML::Value << V4L2Camera::getShortName(camera.pixelFormat())
 	    << YAML::Key << "width"	   << YAML::Value << camera.width()
 	    << YAML::Key << "height"	   << YAML::Value << camera.height();
     u_int	fps_n, fps_d;
@@ -1851,13 +1849,10 @@ operator <<(YAML::Emitter& emitter, const V4L2Camera& camera)
 
       // 各カメラ属性の値を書き出す．
 	BOOST_FOREACH (auto feature, availableFeatures)
-	    for (const auto& featureName : featureNames)
-		if (feature == featureName.feature)
-		{
-		    emitter << YAML::Key   << featureName.name
-			    << YAML::Value << camera.getValue(feature);
-		    break;
-		}
+	{
+	    emitter << YAML::Key   << V4L2Camera::getShortName(feature)
+		    << YAML::Value << camera.getValue(feature);
+	}
 
 	emitter << YAML::EndMap;
     }
