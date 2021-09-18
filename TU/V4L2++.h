@@ -283,6 +283,7 @@ class V4L2Camera
 				  u_int fps_n, u_int fps_d)		;
     void		getFrameRate(u_int& fps_n, u_int& fps_d) const	;
     const std::string&	getName(PixelFormat pixelFormat)	const	;
+    static std::string	getShortName(PixelFormat pixelFormat)		;
     size_t		width()					const	;
     size_t		height()				const	;
     PixelFormat		pixelFormat()				const	;
@@ -309,6 +310,7 @@ class V4L2Camera
 				      int& max, int& step)	const	;
     int			getDefaultValue(Feature feature)	const	;
     const std::string&	getName(Feature feature)		const	;
+    static std::string	getShortName(Feature feature)			;
     std::ostream&	put(std::ostream& out, Feature feature)	const	;
 
   // Capture stuffs.
@@ -411,6 +413,18 @@ inline const std::string&
 V4L2Camera::getName(PixelFormat pixelFormat) const
 {
     return pixelFormatToFormat(pixelFormat).name;
+}
+
+inline std::string
+V4L2Camera::getShortName(PixelFormat pixelFormat)
+{
+    char	fourcc[5];
+    fourcc[0] =	 pixelFormat	    & 0xff;
+    fourcc[1] = (pixelFormat >>  8) & 0xff;
+    fourcc[2] = (pixelFormat >> 16) & 0xff;
+    fourcc[3] = (pixelFormat >> 24) & 0xff;
+    fourcc[4] = '\0';
+    return std::string(fourcc);
 }
 
 //! 現在設定されている画像幅を取得する
