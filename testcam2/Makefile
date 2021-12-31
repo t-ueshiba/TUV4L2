@@ -12,7 +12,7 @@ VPATH		=
 IDLS		=
 MOCHDRS		=
 
-INCDIRS		= -I.. -I../../TUIIDC++/testcam2 -I../../TUIIDC++/testcam -I$(PREFIX)/include
+INCDIRS		= -I.. -I../../TUIIDC/testcam2 -I../../TUIIDC/testcam -I$(PREFIX)/include
 CPPFLAGS	= -DNDEBUG
 CFLAGS		= -O3
 NVCCFLAGS	= -O
@@ -25,7 +25,7 @@ else
 endif
 CCFLAGS		= $(CFLAGS)
 
-LIBS		= -lTUvV4L2++ -lTUV4L2++ -lTUv++ -lTUTools++ -lyaml-cpp
+LIBS		= -lTUvV4L2 -lTUV4L2 -lTUv -lTUTools -lyaml-cpp
 LINKER		= $(CXX)
 
 BINDIR		= $(PREFIX)/bin

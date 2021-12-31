@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS_DEBUG	"-g")
 set(CMAKE_BUILD_TYPE		Release)
 
 find_package(Qt5Widgets REQUIRED)
-include_directories($(PROJECT_SOURCE_DIR)/../../TUIIDC++/testIIDCcamera
+include_directories($(PROJECT_SOURCE_DIR)/../../TUIIDC/testIIDCcamera
 		    ${Qt5Widgets_INCLUDE_DIRS})
 
 file(GLOB sources *.cc)
@@ -20,6 +20,6 @@ set(moc_sources "")
 QT5_WRAP_CPP(moc_sources ${moc_headers})
 
 add_executable(${PROJECT_NAME} ${sources} ${moc_sources})
-target_link_libraries(${PROJECT_NAME} TUV4L2++ TUQt++ ${Qt5Widgets_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} TUV4L2 TUQt ${Qt5Widgets_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)

@@ -1,1 +1,1 @@
-../../TUIIDC++/testIIDCcamera/CmdPane.h
+../../TUIIDC/testIIDCcamera/CmdPane.h

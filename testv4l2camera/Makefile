@@ -12,7 +12,7 @@ VPATH		=
 IDLS		=
 MOCHDRS		= CmdPane.h
 
-INCDIRS		= -I. -I$(PREFIX)/include -I../../TUIIDC++/testIIDCcamera2
+INCDIRS		= -I. -I$(PREFIX)/include -I../../TUIIDC/testIIDCcamera2
 CPPFLAGS	= -DNDEBUG $(shell pkg-config --cflags Qt5Widgets)
 CFLAGS		= -O3
 NVCCFLAGS	= -O
@@ -26,7 +26,7 @@ else
 endif
 CCFLAGS		= $(CFLAGS)
 
-LIBS		= -lTUQt++ -lTUV4L2++ -lTUTools++ -lyaml-cpp \
+LIBS		= -lTUQt -lTUV4L2 -lTUTools -lyaml-cpp \
 		  $(shell pkg-config --libs Qt5Widgets)
 LINKER		= $(CXX)
 

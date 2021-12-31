@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(TUV4L2++)
+project(TUV4L2)
 
 if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)
@@ -29,14 +29,14 @@ link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 file(GLOB sources *.cc)
 add_library(${PROJECT_NAME} SHARED ${sources})
-target_link_libraries(${PROJECT_NAME} TUTools++ ${YAML-CPP_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} TUTools ${YAML-CPP_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
 
 add_subdirectory(TU)
 add_subdirectory(testv4l2camera)
 
-option(BUILD_TUV4L2PP_TEST_PROGRAMS "Building test programs for TUV4L2++" OFF)
+option(BUILD_TUV4L2PP_TEST_PROGRAMS "Building test programs for TUV4L2" OFF)
 
 if(BUILD_TUV4L2PP_TEST_PROGRAMS)
   add_subdirectory(testcam)
