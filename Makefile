@@ -26,7 +26,7 @@ else
 endif
 CCFLAGS		= $(CFLAGS)
 
-LIBS		= -lTUTools++ -lyaml-cpp
+LIBS		= -lTUTools -lyaml-cpp
 LINKER		= $(CXX)
 
 BINDIR		= $(PREFIX)/bin

@@ -192,35 +192,45 @@ V4L2Camera::initialize(const char* dev)
   // デバイスをオープン
     _fd = ::open(dev, O_RDWR);
     if (_fd < 0)
-	throw runtime_error(string("V4L2Camera::initialize(): failed to open ")
-			    + dev + "!! " + strerror(errno));
+	throw range_error(string("V4L2Camera::initialize(): failed to open ")
+			  + dev + "!! " + strerror(errno));
 
     _dev = dev;
 
   // デバイスの能力を調査
     v4l2_capability	cap;
     memset(&cap, 0, sizeof(cap));
+
     if (ioctl(VIDIOC_QUERYCAP, &cap))
-	throw runtime_error(string("V4L2Camera::V4L2Camera(): VIDIOC_QUERYCAP failed!! ") + strerror(errno));
+	throw runtime_error(string("V4L2Camera::initialize(): [")
+			    + dev + "] VIDIOC_QUERYCAP failed!! "
+			    + strerror(errno));
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
-	throw runtime_error("V4L2Camera::V4L2Camera(): not a capture device!");
+	throw runtime_error(string("V4L2Camera::initialize(): [")
+			    + dev + "] not a capture device!");
     if (!(cap.capabilities & V4L2_CAP_STREAMING))
-	throw runtime_error("V4L2Camera::V4L2Camera(): not a streaming device!");
+	throw runtime_error(string("V4L2Camera::initialize(): [")
+			    + dev + "] not a streaming device!");
 
     enumerateFormats();		// 画素フォーマット，画像サイズ，フレームレート
     enumerateControls();	// カメラのコントロール=属性
 
   // このカメラのどの画素フォーマットも本ライブラリで未サポートならば例外を送出
     const auto	pixelFormats = availablePixelFormats();
+  /*
     if (pixelFormats.first == pixelFormats.second)
-	throw runtime_error("V4L2Camera::V4L2Camera(): no available pixel formats!");
+	throw runtime_error("V4L2Camera::initialize(): ["
+			    + _dev + "] no available pixel formats!");
+  */
 
   // 画素フォーマットと画像サイズおよびフレームレートの現在値を取得
     v4l2_format	fmt;
     memset(&fmt, 0, sizeof(fmt));
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (ioctl(VIDIOC_G_FMT, &fmt))
-	throw runtime_error(string("V4L2Camera::V4L2Camera(): VIDIOC_G_FMT failed!! ") + strerror(errno));
+	throw runtime_error(string("V4L2Camera::initialize(): [")
+			    + dev + "] VIDIOC_G_FMT failed!! "
+			    + strerror(errno));
     _width	 = fmt.fmt.pix.width;
     _height	 = fmt.fmt.pix.height;
     _pixelFormat = uintToPixelFormat(fmt.fmt.pix.pixelformat);
