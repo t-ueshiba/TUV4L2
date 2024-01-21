@@ -114,8 +114,9 @@ setFeature(CAMERAS&& cameras, u_int id, int val)
 	return false;
 
     std::for_each(std::begin(cameras), std::end(cameras),
-		  std::bind(&V4L2Camera::setValue,
-			    std::placeholders::_1, feature, val));
+		  [feature, val](auto& camera)
+		  { camera.setValue(feature, val); });
+
     return true;
 }
      
