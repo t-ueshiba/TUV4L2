@@ -179,7 +179,7 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 	    int	min, max, step;
 	    camera.getMinMaxStep(feature, min, max, step);
 
-	    if (min == 0 && max == 1)	// toggle button
+	    if (min == 0 && max == 1)		// toggle button
 	    {
 		const auto	toggle = new QPushButton(
 					   tr(camera.getName(feature).c_str()),
@@ -203,7 +203,27 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 		toggle->setChecked(camera.getValue(feature));
 		_layout->addWidget(toggle, row, 1, 1, 2);
 	    }
-	    else			// slider
+	    else if (min == 0 && max == 0)	// button
+	    {
+		const auto	button = new QPushButton(
+					   tr(camera.getName(feature).c_str()),
+					   this);
+		connect(button, &QPushButton::clicked,
+			[this, &camera, feature]()
+			{
+			    try
+			    {
+				camera.setValue(feature, 0);
+			    }
+			    catch (const std::exception& err)
+			    {
+				QMessageBox::critical(this, tr("Error"),
+						      tr(err.what()));
+			    }
+			});
+		_layout->addWidget(button, row, 1, 1, 2);
+	    }
+	    else				// slider
 	    {
 		const auto	label = new QLabel(
 					  tr(camera.getName(feature).c_str()),
@@ -309,6 +329,26 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
     		toggle->setChecked(camera.getValue(name));
     		_layout->addWidget(toggle, row, 4, 1, 1);
     	    }
+	    else if (min == 0 && max == 0)	// button
+	    {
+		const auto	button = new QPushButton(tr(name.c_str()),
+							 this);
+		button->setCheckable(false);
+		connect(button, &QPushButton::clicked,
+			[this, &camera, &name]()
+			{
+			    try
+			    {
+				camera.setValue(name, 0);
+			    }
+			    catch (const std::exception& err)
+			    {
+				QMessageBox::critical(this, tr("Error"),
+						      tr(err.what()));
+			    }
+			});
+		_layout->addWidget(button, row, 4, 1, 1);
+	    }
     	    else			// slider
     	    {
     		const auto	label = new QLabel(

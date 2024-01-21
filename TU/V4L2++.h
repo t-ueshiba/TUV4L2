@@ -149,7 +149,7 @@ class V4L2Camera
 	bool	involves(T val) const
 		{
 		    return (min <= val && val <= max &&
-			    (val - min) % step == 0);
+			    (step == 0 || (val - min) % step == 0));
 		}
 
 	T	min;				//!< 最小値
