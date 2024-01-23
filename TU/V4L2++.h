@@ -10,6 +10,7 @@
 
 #include <cstddef>		// for size_t
 #include <cstdint>		// for uintXX_t
+#include <cctype>		// for isspace()
 #include <sys/types.h>		// for u_int
 #include <asm/types.h>		// for videodev2.h
 #include <linux/videodev2.h>
@@ -325,7 +326,8 @@ class V4L2Camera
     bool		isAvailable(const std::string& name)	const	;
     V4L2Camera&		setValue(const std::string& name, int value)	;
     int			getValue(const std::string& name)	const	;
-
+    static std::string	getShortName(const std::string& name)		;
+    
   // Feature/ExtendedControl stuffs.
     template <class KEY>
     MenuItemRange	availableMenuItems(const KEY& key)	const	;
@@ -360,14 +362,15 @@ class V4L2Camera
     static Feature	uintToFeature(u_int feature)			;
 
   private:
-    void		enumerateFormats()				;
-    void		enumerateControls()				;
-    void		enumerateExtendedControls()			;
-    bool		addControl(u_int id)				;
-    template <class CTRL>
-    int			enumerateMenuItems(
-			    const CTRL& ctrl,
-			    std::vector<MenuItem>& menuItems)		;
+    std::vector<Format>	enumerateFormats()			const	;
+    template <class CONTROL> std::vector<CONTROL>
+			enumerateControls()			const	;
+    template <class CTRL> std::vector<MenuItem>
+			enumerateMenuItems(const CTRL& ctrl)	const	;
+    static std::pair<Control, bool>
+			createControl(const v4l2_queryctrl& ctrl)	;
+    static std::pair<ExtendedControl, bool>
+			createControl(const v4l2_query_ext_ctrl& ctrl)	;
     const Format&	pixelFormatToFormat(PixelFormat pixelFormat)
 								const	;
     const Control&	keyToControl(Feature feature)		const	;
@@ -381,9 +384,8 @@ class V4L2Camera
     u_int		dequeueBuffer()					;
 
     int			ioctl(int request, void* arg)		const	;
-    int			ioctl(int id, v4l2_queryctrl& ctrl)	const	;
-    int			ioctl(int id,
-			      v4l2_query_ext_ctrl& ext_ctrl)	const	;
+    template <class CTRL>
+    int			ioctl(int id, CTRL& ctrl)		const	;
 
     friend std::ostream&
 	operator <<(std::ostream& out, const Format& format)		;
@@ -458,7 +460,10 @@ V4L2Camera::getShortName(PixelFormat pixelFormat)
     fourcc[1] = (pixelFormat >>  8) & 0xff;
     fourcc[2] = (pixelFormat >> 16) & 0xff;
     fourcc[3] = (pixelFormat >> 24) & 0xff;
-    fourcc[4] = '\0';
+    if (isspace(fourcc[3]))
+	fourcc[3] = '\0';
+    else
+	fourcc[4] = '\0';
     return std::string(fourcc);
 }
 
