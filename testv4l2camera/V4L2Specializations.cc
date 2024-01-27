@@ -29,12 +29,26 @@ namespace qt
 /************************************************************************
 *  static functions							*
 ************************************************************************/
+static std::string
+getFormatString(const V4L2Camera& camera)
+{
+    u_int		fps_n, fps_d;
+    camera.getFrameRate(fps_n, fps_d);
+    
+    std::ostringstream	s;
+    s << camera.getName(camera.pixelFormat())
+      << '[' << camera.width() << 'x' << camera.height()
+      << '@' << fps_n << '/' << fps_d << ']';
+
+    return s.str();
+}
+    
 template <class KEY> static void
 addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout, u_int row)
 {
     auto* const	pane	  = layout->parentWidget();
     const auto	menuItems = camera.availableMenuItems(key);
-
+	
     if (menuItems.first == menuItems.second)
     {
 	int	min, max, step;
@@ -235,8 +249,12 @@ CameraWindow<V4L2Camera>::captureAndDisplay()
 template <> void
 CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 {
+  // PixelFormat label を生成する．
+    auto	label = new QLabel(tr(getFormatString(camera).c_str()), _pane);
+    _layout->addWidget(label, 1, 0, 1, 3);
+    
   // PixelFormat button を生成する．
-    auto	button = new QPushButton(_pane);
+    auto	button = new QPushButton(tr("Format"), _pane);
     const auto	menu   = new QMenu(button);
 
     BOOST_FOREACH (auto pixelFormat, camera.availablePixelFormats())
@@ -284,7 +302,7 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 		frameRateMenu->addAction(frameRateAction);
 		_pane->connect(
 		    frameRateAction, &QAction::triggered,
-		    [&camera, pixelFormat, &frameSize, &frameRate, button]()
+		    [&camera, pixelFormat, &frameSize, &frameRate, label]()
 		    {
 			if (frameRate.fps_n.min == frameRate.fps_n.max &&
 			    frameRate.fps_d.min == frameRate.fps_d.max)
@@ -294,15 +312,14 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 					     frameSize.height.max,
 					     frameRate.fps_n.min,
 					     frameRate.fps_d.max);
-			    button->setText(
-				tr(camera.getName(pixelFormat).c_str()));
+			    label->setText(tr(getFormatString(camera).c_str()));
 			}
 		    });
 	    }
 	}
 
-	if (camera.pixelFormat() == pixelFormat)
-	    button->setText(tr(camera.getName(pixelFormat).c_str()));
+	// if (camera.pixelFormat() == pixelFormat)
+	//     button->setText(tr(camera.getName(pixelFormat).c_str()));
     }
     button->setMenu(menu);
     _layout->addWidget(button, 0, 1, 1, 1);

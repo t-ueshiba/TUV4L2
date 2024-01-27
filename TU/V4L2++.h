@@ -452,21 +452,6 @@ V4L2Camera::getName(PixelFormat pixelFormat) const
     return pixelFormatToFormat(pixelFormat).name;
 }
 
-inline std::string
-V4L2Camera::getShortName(PixelFormat pixelFormat)
-{
-    char	fourcc[5];
-    fourcc[0] =	 pixelFormat	    & 0xff;
-    fourcc[1] = (pixelFormat >>  8) & 0xff;
-    fourcc[2] = (pixelFormat >> 16) & 0xff;
-    fourcc[3] = (pixelFormat >> 24) & 0xff;
-    if (isspace(fourcc[3]))
-	fourcc[3] = '\0';
-    else
-	fourcc[4] = '\0';
-    return std::string(fourcc);
-}
-
 //! 現在設定されている画像幅を取得する
 inline size_t
 V4L2Camera::width() const

@@ -408,6 +408,26 @@ V4L2Camera::getFrameRate(u_int& fps_n, u_int& fps_d) const
     fps_d = streamparm.parm.capture.timeperframe.denominator;
 }
 
+//! 指定した画素フォーマットに付けられている短縮名を取得する
+/*!
+  \param pixelFormat	画素フォーマット
+  \return		画素フォーマットの短縮名
+*/
+std::string
+V4L2Camera::getShortName(PixelFormat pixelFormat)
+{
+    char	fourcc[5];
+    fourcc[0] =	 pixelFormat	    & 0xff;
+    fourcc[1] = (pixelFormat >>  8) & 0xff;
+    fourcc[2] = (pixelFormat >> 16) & 0xff;
+    fourcc[3] = (pixelFormat >> 24) & 0xff;
+    for (size_t i = 0; i < 4; ++i)
+	if (isspace(fourcc[i]))
+	    fourcc[i] = '\0';
+    fourcc[4] = '\0';
+    return std::string(fourcc);
+}
+
 /*
  *  ROI stuffs.
  */
@@ -618,6 +638,11 @@ V4L2Camera::getValue(Feature feature) const
     return ctrl.value;
 }
 
+//! 指定した属性に付けられている短縮名を取得する
+/*!
+  \param feature	対象となる属性
+  \return		属性の短縮名
+*/
 std::string
 V4L2Camera::getShortName(Feature feature)
 {
@@ -630,6 +655,12 @@ V4L2Camera::getShortName(Feature feature)
 /*
  *  Extended Control stuffs.
  */
+//! 指定された拡張コントロールの値を設定する
+/*!
+  \param name	拡張コントロールの名前
+  \param value	設定する値
+  \return	このカメラオブジェクト
+*/
 V4L2Camera&
 V4L2Camera::setValue(const std::string& name, int value)
 {
@@ -671,6 +702,11 @@ V4L2Camera::setValue(const std::string& name, int value)
     return *this;
 }
 
+//! 指定された拡張コントロールの現在の値を取得する
+/*!
+  \param name	拡張コントロールの名前
+  \return	現在の値
+*/
 int
 V4L2Camera::getValue(const std::string& name) const
 {
@@ -699,6 +735,11 @@ V4L2Camera::getValue(const std::string& name) const
     return ctrl.value;
 }
 
+//! 指定した拡張コントロールに付けられている短縮名を取得する
+/*!
+  \param pixelFormat	拡張コントロールの名前
+  \return		拡張コントロールの短縮名
+*/
 std::string
 V4L2Camera::getShortName(const std::string& name)
 {
@@ -1822,7 +1863,7 @@ operator <<(std::ostream& out, const V4L2Camera::Range<T>& range)
 std::ostream&
 operator <<(std::ostream& out, const V4L2Camera::FrameSize& frameSize)
 {
-    return out << frameSize.width << 'x' << frameSize.height << ':';
+    return out << frameSize.width << 'x' << frameSize.height;
 }
 
 //! フレームレートを出力ストリームに出力する
@@ -1924,7 +1965,7 @@ operator <<(YAML::Emitter& emitter, const V4L2Camera& camera)
 	emitter << YAML::Key << "extended_controls" << YAML::Value
 		<< YAML::BeginMap;
 
-      // 各カメラ属性の値を書き出す．
+      // 各カメラ拡張コントロールの値を書き出す．
 	BOOST_FOREACH (auto name, availableExtendedControls)
 	{
 	    emitter << YAML::Key   << V4L2Camera::getShortName(name)
@@ -1984,7 +2025,7 @@ operator >>(const YAML::Node& node, V4L2Camera& camera)
 		    break;
 		}
 
-  // 各カメラ属性を読み込んでカメラに設定する．
+  // 各カメラ拡張コントロールを読み込んでカメラに設定する．
     if (const auto& controls = node["extended_controls"])
 	for (const auto& control : controls)
 	    BOOST_FOREACH (const auto& controlName,
