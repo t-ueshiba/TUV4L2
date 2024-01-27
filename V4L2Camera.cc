@@ -1339,8 +1339,8 @@ V4L2Camera::enumerateFormats() const
 		    frameRate.fps_n.max  = fival.discrete.numerator;
 		    frameRate.fps_d.min  = fival.discrete.denominator;
 		    frameRate.fps_d.max  = fival.discrete.denominator;
-		    frameRate.fps_n.step = 1;
-		    frameRate.fps_d.step = 1;
+		    frameRate.fps_n.step = 0;
+		    frameRate.fps_d.step = 0;
 		}
 		else
 		{
@@ -1820,11 +1820,7 @@ operator <<(std::ostream& out, const V4L2Camera::Range<T>& range)
 std::ostream&
 operator <<(std::ostream& out, const V4L2Camera::FrameSize& frameSize)
 {
-    out << frameSize.width << 'x' << frameSize.height << ':';
-
-    BOOST_FOREACH (const auto& frameRate, frameSize.availableFrameRates())
-	out << ' ' << frameRate;
-    return out;
+    return out << frameSize.width << 'x' << frameSize.height << ':';
 }
 
 //! フレームレートを出力ストリームに出力する

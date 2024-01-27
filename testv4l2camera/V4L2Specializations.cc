@@ -125,22 +125,45 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 		menu->addAction(pixelFormatAction);
 	    }
 
-	    std::ostringstream	s;
-	    s << frameSize;
-	    const auto	frameSizeAction = new QAction(tr(s.str().c_str()),
-						      frameSizeMenu);
-	    frameSizeMenu->addAction(frameSizeAction);
-	    connect(frameSizeAction, &QAction::triggered,
-		    [&camera, pixelFormat, &frameSize, button]()
-		    {
-			camera.setFormat(
-			    pixelFormat,
-			    frameSize.width.max, frameSize.height.max,
-			    frameSize.frameRates.front().fps_n.min,
-			    frameSize.frameRates.front().fps_d.max);
-			button->setText(
-			    tr(camera.getName(pixelFormat).c_str()));
-		    });
+	    QMenu*	frameRateMenu = nullptr;
+
+	    BOOST_FOREACH (const auto& frameRate,
+			   frameSize.availableFrameRates())
+	    {
+		if (!frameRateMenu)
+		{
+		    frameRateMenu = new QMenu(frameSizeMenu);
+
+		    std::ostringstream	s;
+		    s << frameSize;
+		    const auto	frameSizeAction = new QAction(
+							tr(s.str().c_str()),
+							frameSizeMenu);
+		    frameSizeAction->setMenu(frameRateMenu);
+		    frameSizeMenu->addAction(frameSizeAction);
+		}
+
+		std::ostringstream	s;
+		s << frameRate;
+		const auto	frameRateAction = new QAction(
+							tr(s.str().c_str()),
+							frameRateMenu);
+		frameRateMenu->addAction(frameRateAction);
+		connect(frameRateAction, &QAction::triggered,
+			[&camera, pixelFormat, &frameSize, &frameRate, button]()
+			{
+			    if (frameRate.fps_n.min == frameRate.fps_n.max &&
+				frameRate.fps_d.min == frameRate.fps_d.max)
+			    {
+				camera.setFormat(
+				    pixelFormat,
+				    frameSize.width.max, frameSize.height.max,
+				    frameRate.fps_n.min, frameRate.fps_d.max);
+				button->setText(
+				    tr(camera.getName(pixelFormat).c_str()));
+			    }
+			});
+	    }
 	}
 
 	if (camera.pixelFormat() == pixelFormat)
