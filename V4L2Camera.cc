@@ -702,13 +702,13 @@ V4L2Camera::getValue(const std::string& name) const
 std::string
 V4L2Camera::getShortName(const std::string& name)
 {
-    auto	sname = name;
-    for (auto& c : sname)
+    std::string	sname("");
+    for (auto c : name)
 	if (isalnum(c))
-	    c = tolower(c);
-	else
-	    c = '_';
-	
+	    sname += tolower(c);
+	else if (isspace(c))
+	    sname += '_';
+
     return sname;
 }
 
