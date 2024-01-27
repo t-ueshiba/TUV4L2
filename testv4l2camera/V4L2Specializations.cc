@@ -30,10 +30,9 @@ namespace qt
 *  static functions							*
 ************************************************************************/
 template <class KEY> static void
-addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout,
-	   u_int row, u_int col)
+addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout, u_int row)
 {
-    auto* const	widget	  = layout->parentWidget();
+    auto* const	pane	  = layout->parentWidget();
     const auto	menuItems = camera.availableMenuItems(key);
 
     if (menuItems.first == menuItems.second)
@@ -46,87 +45,87 @@ addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout,
 	    const auto	toggle = new QPushButton(
 					QObject::tr(
 					    camera.getName(key).c_str()),
-					widget);
+					pane);
 	    toggle->setCheckable(true);
-	    widget->connect(toggle, &QPushButton::toggled,
-			    [widget, &camera, key, toggle](bool enable)
-			    {
-				try
-				{
-				    camera.setValue(key, (enable ? 1 : 0));
-				}
-				catch (const std::exception& err)
-				{
-				    toggle->setChecked(camera.getValue(key));
+	    pane->connect(toggle, &QPushButton::toggled,
+			  [pane, &camera, key, toggle](bool enable)
+			  {
+			      try
+			      {
+				  camera.setValue(key, (enable ? 1 : 0));
+			      }
+			      catch (const std::exception& err)
+			      {
+				  toggle->setChecked(camera.getValue(key));
 
-				    QMessageBox::critical(
-					widget, QObject::tr("Error"),
-					QObject::tr(err.what()));
+				  QMessageBox::critical(
+				      pane, QObject::tr("Error"),
+				      QObject::tr(err.what()));
 				}
 			    });
 	    toggle->setChecked(camera.getValue(key));
-	    layout->addWidget(toggle, row, col + 1, 1, 2);
+	    layout->addWidget(toggle, row, 1, 1, 2);
 	}
 	else if (min == 0 && max == 0)	// button
 	{
 	    const auto	button = new QPushButton(
 					QObject::tr(
 					    camera.getName(key).c_str()),
-					widget);
+					pane);
 	    button->setCheckable(false);
-	    widget->connect(button, &QPushButton::clicked,
-			    [widget, &camera, key]()
-			    {
-				try
-				{
-				    camera.setValue(key, 0);
-				}
-				catch (const std::exception& err)
-				{
-				    QMessageBox::critical(
-					widget, QObject::tr("Error"),
-					QObject::tr(err.what()));
-				}
-			    });
-	    layout->addWidget(button, row, col + 1, 1, 2);
+	    pane->connect(button, &QPushButton::clicked,
+			  [pane, &camera, key]()
+			  {
+			      try
+			      {
+				  camera.setValue(key, 0);
+			      }
+			      catch (const std::exception& err)
+			      {
+				  QMessageBox::critical(
+				      pane, QObject::tr("Error"),
+				      QObject::tr(err.what()));
+			      }
+			  });
+	    layout->addWidget(button, row, 1, 1, 2);
 	}
 	else			// slider
 	{
 	    const auto	label = new QLabel(QObject::tr(
 					       camera.getName(key).c_str()),
-					   widget);
+					   pane);
 	    label->setAlignment(Qt::Alignment(Qt::AlignRight |
 					      Qt::AlignVCenter));
-	    layout->addWidget(label, row, col, 1, 1);
+	    layout->addWidget(label, row, 0, 1, 1);
 
-	    const auto	slider = new Slider(widget);
-	    widget->connect(slider, &Slider::valueChanged,
-			    [&camera, key, slider](double val)
-			    {
-				try
-				{
-				    camera.setValue(key, int(val));
-				}
-				catch (const std::exception& err)
-				{
-				    slider->setValue(camera.getValue(key));
+	    const auto	slider = new Slider(pane);
+	    pane->connect(slider, &Slider::valueChanged,
+			  [&camera, key, slider](double val)
+			  {
+			      try
+			      {
+				  camera.setValue(key, int(val));
+			      }
+			      catch (const std::exception& err)
+			      {
+				  slider->setValue(camera.getValue(key));
 
-				    std::cerr << err.what() << std::endl;
-				}
-			    });
+				  std::cerr << err.what() << std::endl;
+			      }
+			  });
 	    slider->setRange(min, max, step);
 	    slider->setValue(camera.getValue(key));
-	    layout->addWidget(slider, row, col + 1, 1, 2);
+	    layout->addWidget(slider, row, 1, 1, 2);
 	}
     }
     else				// menu button
     {
 	const auto label = new QLabel(QObject::tr(camera.getName(key).c_str()),
-				      widget);
+				      pane);
 	label->setAlignment(Qt::Alignment(Qt::AlignRight | Qt::AlignVCenter));
-	layout->addWidget(label, row, col, 1, 1);
+	layout->addWidget(label, row, 0, 1, 1);
 
-	const auto	button = new QPushButton(widget);
+	const auto	button = new QPushButton(pane);
 	const auto	menu   = new QMenu(button);
 
 	BOOST_FOREACH (const auto& menuItem, menuItems)
@@ -134,29 +133,29 @@ addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout,
 	    const auto action = new QAction(QObject::tr(menuItem.name.c_str()),
 					    menu);
 	    menu->addAction(action);
-	    widget->connect(action, &QAction::triggered,
-			    [widget, &camera, key, &menuItem, button]()
-			    {
-				try
-				{
-				    camera.setValue(key, menuItem.index);
-				    button->setText(
-					QObject::tr(menuItem.name.c_str()));
-				}
-				catch (const std::exception& err)
-				{
-				    QMessageBox::critical(
-					widget, QObject::tr("Error"),
-					QObject::tr(err.what()));
-				}
-			    });
+	    pane->connect(action, &QAction::triggered,
+			  [pane, &camera, key, &menuItem, button]()
+			  {
+			      try
+			      {
+				  camera.setValue(key, menuItem.index);
+				  button->setText(
+				      QObject::tr(menuItem.name.c_str()));
+			      }
+			      catch (const std::exception& err)
+			      {
+				  QMessageBox::critical(
+				      pane, QObject::tr("Error"),
+				      QObject::tr(err.what()));
+			      }
+			  });
 
 	    if (camera.getValue(key) == menuItem.index)
 		button->setText(QObject::tr(menuItem.name.c_str()));
 	}
 
 	button->setMenu(menu);
-	layout->addWidget(button, row, col + 1, 1, 2);
+	layout->addWidget(button, row, 1, 1, 2);
     }
 }
     
@@ -237,7 +236,7 @@ template <> void
 CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 {
   // PixelFormat button を生成する．
-    auto	button = new QPushButton(this);
+    auto	button = new QPushButton(_pane);
     const auto	menu   = new QMenu(button);
 
     BOOST_FOREACH (auto pixelFormat, camera.availablePixelFormats())
@@ -251,10 +250,10 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 	    {
 		frameSizeMenu = new QMenu(menu);
 
-		const auto
-		    pixelFormatAction = new QAction(tr(camera.getName(
+		const auto	pixelFormatAction
+				    = new QAction(tr(camera.getName(
 							 pixelFormat).c_str()),
-						    menu);
+						  menu);
 		pixelFormatAction->setMenu(frameSizeMenu);
 		menu->addAction(pixelFormatAction);
 	    }
@@ -283,20 +282,22 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 							tr(s.str().c_str()),
 							frameRateMenu);
 		frameRateMenu->addAction(frameRateAction);
-		connect(frameRateAction, &QAction::triggered,
-			[&camera, pixelFormat, &frameSize, &frameRate, button]()
+		_pane->connect(
+		    frameRateAction, &QAction::triggered,
+		    [&camera, pixelFormat, &frameSize, &frameRate, button]()
+		    {
+			if (frameRate.fps_n.min == frameRate.fps_n.max &&
+			    frameRate.fps_d.min == frameRate.fps_d.max)
 			{
-			    if (frameRate.fps_n.min == frameRate.fps_n.max &&
-				frameRate.fps_d.min == frameRate.fps_d.max)
-			    {
-				camera.setFormat(
-				    pixelFormat,
-				    frameSize.width.max, frameSize.height.max,
-				    frameRate.fps_n.min, frameRate.fps_d.max);
-				button->setText(
-				    tr(camera.getName(pixelFormat).c_str()));
-			    }
-			});
+			    camera.setFormat(pixelFormat,
+					     frameSize.width.max,
+					     frameSize.height.max,
+					     frameRate.fps_n.min,
+					     frameRate.fps_d.max);
+			    button->setText(
+				tr(camera.getName(pixelFormat).c_str()));
+			}
+		    });
 	    }
 	}
 
@@ -307,36 +308,36 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
     _layout->addWidget(button, 0, 1, 1, 1);
 
   // ROI button を生成する．
-    button = new QPushButton(tr("Set ROI"), this);
-    connect(button, &QPushButton::clicked,
-	    [this, &camera]()
-	    {
-		try
-		{
-		    size_t	u0, v0, width, height;
-		    ROI_Dialog::getROI(camera, u0, v0, width, height);
-		    camera.setROI(u0, v0, width, height);
-		}
-		catch (const std::exception& err)
-		{
-		    QMessageBox::warning(this, tr("Warning"), tr(err.what()));
-		}
-	    });
+    button = new QPushButton(tr("Set ROI"), _pane);
+    _pane->connect(button, &QPushButton::clicked,
+		   [this, &camera]()
+		   {
+		       try
+		       {
+			   size_t	u0, v0, width, height;
+			   ROI_Dialog::getROI(camera, u0, v0, width, height);
+			   camera.setROI(u0, v0, width, height);
+		       }
+		       catch (const std::exception& err)
+		       {
+			   QMessageBox::warning(this, tr("Warning"),
+						tr(err.what()));
+		       }
+		   });
     _layout->addWidget(button, 0, 2, 1, 1);
 
   // Feature button/slider を生成する．
     auto	row = _layout->rowCount();
     BOOST_FOREACH (auto feature, camera.availableFeatures())
     {
-	addControl(camera, feature, _layout, row, 0);
+	addControl(camera, feature, _layout, row);
 	++row;
     }
 
   // ExtendedControl button/slider を生成する．
-    row = 0;
     BOOST_FOREACH (const auto& name, camera.availableExtendedControls())
     {
-	addControl(camera, name, _layout, row, 3);
+	addControl(camera, name, _layout, row);
 	++row;
     }
 }
