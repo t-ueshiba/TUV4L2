@@ -35,6 +35,7 @@ addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout,
 {
     auto* const	widget	  = layout->parentWidget();
     const auto	menuItems = camera.availableMenuItems(key);
+
     if (menuItems.first == menuItems.second)
     {
 	int	min, max, step;
@@ -48,7 +49,7 @@ addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout,
 					widget);
 	    toggle->setCheckable(true);
 	    widget->connect(toggle, &QPushButton::toggled,
-			    [widget, &camera, &key, toggle](bool enable)
+			    [widget, &camera, key, toggle](bool enable)
 			    {
 				try
 				{
@@ -74,7 +75,7 @@ addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout,
 					widget);
 	    button->setCheckable(false);
 	    widget->connect(button, &QPushButton::clicked,
-			    [widget, &camera, &key]()
+			    [widget, &camera, key]()
 			    {
 				try
 				{
@@ -100,7 +101,7 @@ addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout,
 
 	    const auto	slider = new Slider(widget);
 	    widget->connect(slider, &Slider::valueChanged,
-			    [&camera, &key, slider](double val)
+			    [&camera, key, slider](double val)
 			    {
 				try
 				{
@@ -134,7 +135,7 @@ addControl(V4L2Camera& camera, const KEY& key, QGridLayout* layout,
 					    menu);
 	    menu->addAction(action);
 	    widget->connect(action, &QAction::triggered,
-			    [widget, &camera, &key, &menuItem, button]()
+			    [widget, &camera, key, &menuItem, button]()
 			    {
 				try
 				{
@@ -325,7 +326,6 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 
   // Feature button/slider を生成する．
     auto	row = _layout->rowCount();
-
     BOOST_FOREACH (auto feature, camera.availableFeatures())
     {
 	addControl(camera, feature, _layout, row, 0);
