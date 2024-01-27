@@ -1442,8 +1442,9 @@ V4L2Camera::createControl(const v4l2_queryctrl& ctrl)
     control.feature = uintToFeature(ctrl.id);
 
     return {control,
-	    ~(ctrl.flags & V4L2_CTRL_FLAG_DISABLED) &&
-	     (control.feature != UNKNOWN_FEATURE)};
+	    !(ctrl.flags & V4L2_CTRL_FLAG_DISABLED)  &&
+	    !(ctrl.flags & V4L2_CTRL_FLAG_READ_ONLY) &&
+	    (control.feature != UNKNOWN_FEATURE)};
 }
 
 std::pair<V4L2Camera::ExtendedControl, bool>
@@ -1458,7 +1459,8 @@ V4L2Camera::createControl(const v4l2_query_ext_ctrl& ctrl)
 		control.dims.begin());
 
     return {control,
-	    ~(ctrl.flags & V4L2_CTRL_FLAG_DISABLED) &&
+	    !(ctrl.flags & V4L2_CTRL_FLAG_DISABLED)  &&
+	    !(ctrl.flags & V4L2_CTRL_FLAG_READ_ONLY) &&
 	    (uintToFeature(ctrl.id) == UNKNOWN_FEATURE)};
 }
 
