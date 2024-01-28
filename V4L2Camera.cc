@@ -119,7 +119,7 @@ V4L2Camera::V4L2Camera()
   \param dev	デバイス名
 */
 V4L2Camera::V4L2Camera(const char* dev)
-    :_fd(-1), _dev(), _formats(), _controls(), _extendedControls(),
+    :_fd(-1), _dev(), _formats(), _controls(),
      _width(0), _height(0), _pixelFormat(UNKNOWN_PIXEL_FORMAT),
      _buffers(), _current(NO_DATA), _inContinuousShot(false), _arrivaltime()
 {
@@ -131,7 +131,6 @@ V4L2Camera::V4L2Camera(V4L2Camera&& camera)
     :_fd(camera._fd), _dev(std::move(camera._dev)),
      _formats(std::move(camera._formats)),
      _controls(std::move(camera._controls)),
-     _extendedControls(std::move(camera._extendedControls)),
      _width(camera._width), _height(camera._height),
      _pixelFormat(camera._pixelFormat),
      _buffers(std::move(camera._buffers)), _current(camera._current),
@@ -149,7 +148,6 @@ V4L2Camera::operator =(V4L2Camera&& camera)
     _dev		= std::move(camera._dev);
     _formats		= std::move(camera._formats);
     _controls		= std::move(camera._controls);
-    _extendedControls	= std::move(camera._extendedControls);
     _width		= camera._width;
     _height		= camera._height;
     _pixelFormat	= camera._pixelFormat;
@@ -213,9 +211,8 @@ V4L2Camera::initialize(const char* dev)
 	throw std::runtime_error(std::string("V4L2Camera::initialize(): [")
 				 + dev + "] not a streaming device!");
 
-    _formats = enumerateFormats();	// 画素形式，画像サイズ，フレームレート
-    _controls = enumerateControls<Control>();
-    _extendedControls = enumerateControls<ExtendedControl>();
+    _formats  = enumerateFormats();	// 画素形式，画像サイズ，フレームレート
+    _controls = enumerateControls();
 
   // このカメラのどの画素フォーマットも本ライブラリで未サポートならば例外を送出
     const auto	pixelFormats = availablePixelFormats();
@@ -280,7 +277,6 @@ V4L2Camera::terminate()
     _dev.clear();
     _formats.clear();
     _controls.clear();
-    _extendedControls.clear();
     _width		= 0;
     _height		= 0;
     _pixelFormat	= UNKNOWN_PIXEL_FORMAT;
@@ -542,7 +538,7 @@ V4L2Camera::getROILimits(size_t& minU0, size_t& minV0,
 }
 
 /*
- *  Feature/ExtendedControl stuffs.
+ *  Feature stuffs.
  */
 //! 指定された属性がこのカメラでサポートされているか調べる
 /*!
@@ -553,17 +549,7 @@ bool
 V4L2Camera::isAvailable(Feature feature) const
 {
     for (const auto& control : _controls)
-	if (control.feature != UNKNOWN_FEATURE && control.feature == feature)
-	    return true;
-
-    return false;
-}
-
-bool
-V4L2Camera::isAvailable(const std::string& name) const
-{
-    for (const auto& control : _extendedControls)
-	if (control.name == name)
+	if (control.feature == feature)
 	    return true;
 
     return false;
@@ -578,11 +564,11 @@ V4L2Camera::isAvailable(const std::string& name) const
 V4L2Camera&
 V4L2Camera::setValue(Feature feature, int value)
 {
-    const auto&	control = keyToControl(feature);
+    const auto&	control = featureToControl(feature);
 
     if (control.flags & V4L2_CTRL_FLAG_READ_ONLY)
 	throw std::runtime_error("V4L2Camera::setValue(): read only feature["
-				 + getName(feature) + "]!!");
+				 + control.name + "]!!");
 
     if (control.type == V4L2_CTRL_TYPE_BOOLEAN)
 	value = (value ? 1 : 0);
@@ -597,16 +583,37 @@ V4L2Camera::setValue(Feature feature, int value)
 	return *this;
     }
 
-    v4l2_control	ctrl;
-    memset(&ctrl, 0, sizeof(ctrl));
-    ctrl.id    = control.feature;
-    ctrl.value = value;
-    if (ioctl(VIDIOC_S_CTRL, &ctrl))
-	throw std::runtime_error("V4L2Camera::setValue(): VIDIOC_S_CTRL failed to set feature["
-				 + getName(feature) + "] to value["
-				 + std::to_string(value) + "]!! "
-				 + strerror(errno));
-
+    if (uintToFeature(feature) != UNKNOWN_FEATURE)
+    {
+	v4l2_control	ctrl;
+	memset(&ctrl, 0, sizeof(ctrl));
+	ctrl.id    = control.feature;
+	ctrl.value = value;
+	if (ioctl(VIDIOC_S_CTRL, &ctrl))
+	    throw std::runtime_error("V4L2Camera::setValue(): VIDIOC_S_CTRL failed to set feature["
+				     + control.name + "] to value["
+				     + std::to_string(value) + "]!! "
+				     + strerror(errno));
+    }
+    else
+    {
+	v4l2_ext_control	ctrl;
+	memset(&ctrl, 0, sizeof(ctrl));
+	ctrl.id    = control.feature;
+	ctrl.size  = sizeof(ctrl.value);
+	ctrl.value = value;
+	v4l2_ext_controls	ctrls;
+	memset(&ctrls, 0, sizeof(ctrls));
+	ctrls.which    = V4L2_CTRL_ID2WHICH(ctrl.id);
+	ctrls.count    = 1;
+	ctrls.controls = &ctrl;
+	if (ioctl(VIDIOC_S_EXT_CTRLS, &ctrls))
+	    throw std::runtime_error("V4L2Camera::setValue(): VIDIOC_S_EXT_CTRLS failed for extended control["
+				     + control.name + "] and value["
+				     + std::to_string(value) + "]!! "
+				     + strerror(errno));
+    }
+    
     return *this;
 }
 
@@ -618,24 +625,43 @@ V4L2Camera::setValue(Feature feature, int value)
 int
 V4L2Camera::getValue(Feature feature) const
 {
-    const auto&	control = keyToControl(feature);
+    const auto&	control = featureToControl(feature);
 
     if (control.flags & V4L2_CTRL_FLAG_WRITE_ONLY)
     {
 	std::cerr << "V4L2Camera::getValue(): write only feature["
-		  << getName(feature) << "]!!" << std::endl;
+		  << control.name << "]!!" << std::endl;
 	return control.def;
     }
 
-    v4l2_control	ctrl;
-    memset(&ctrl, 0, sizeof(ctrl));
-    ctrl.id = control.feature;
-    if (ioctl(VIDIOC_G_CTRL, &ctrl))
-	throw std::runtime_error("V4L2Camera::getValue(): VIDIOC_G_CTRL failed for feature["
-				 + getName(feature) + "]!! "
-				 + strerror(errno));
-
-    return ctrl.value;
+    if (uintToFeature(feature) != UNKNOWN_FEATURE)
+    {
+	v4l2_control	ctrl;
+	memset(&ctrl, 0, sizeof(ctrl));
+	ctrl.id = control.feature;
+	if (ioctl(VIDIOC_G_CTRL, &ctrl))
+	    throw std::runtime_error("V4L2Camera::getValue(): VIDIOC_G_CTRL failed for feature["
+				     + control.name + "]!! "
+				     + strerror(errno));
+	return ctrl.value;
+    }
+    else
+    {
+	v4l2_ext_controls	ctrls;
+	v4l2_ext_control	ctrl;
+	memset(&ctrls, 0, sizeof(ctrls));
+	ctrls.which    = V4L2_CTRL_ID2WHICH(control.feature);
+	ctrls.count    = 1;
+	ctrls.controls = &ctrl;
+	memset(&ctrl,  0, sizeof(ctrl));
+	ctrl.id   = control.feature;
+	ctrl.size = sizeof(ctrl.value);
+	if (ioctl(VIDIOC_G_EXT_CTRLS, &ctrls))
+	    throw std::runtime_error("V4L2Camera::getValue(): VIDIOC_G_EXT_CTRLS failed for extended control["
+				     + control.name + "]!! "
+				     + strerror(errno));
+	return ctrl.value;
+    }
 }
 
 //! 指定した属性に付けられている短縮名を取得する
@@ -644,107 +670,14 @@ V4L2Camera::getValue(Feature feature) const
   \return		属性の短縮名
 */
 std::string
-V4L2Camera::getShortName(Feature feature)
+V4L2Camera::getShortName(Feature feature) const
 {
     for (const auto& featureName : featureNames)
 	if (feature == featureName.feature)
 	    return featureName.name;
-    return "UNKNOWN";
-}
 
-/*
- *  Extended Control stuffs.
- */
-//! 指定された拡張コントロールの値を設定する
-/*!
-  \param name	拡張コントロールの名前
-  \param value	設定する値
-  \return	このカメラオブジェクト
-*/
-V4L2Camera&
-V4L2Camera::setValue(const std::string& name, int value)
-{
-    const auto&	control = keyToControl(name);
-    
-    if (control.flags & V4L2_CTRL_FLAG_READ_ONLY)
-	throw std::runtime_error("V4L2Camera::setValue(): read only feature["
-				 + control.name + "]!!");
-
-    if (control.type == V4L2_CTRL_TYPE_BOOLEAN)
-	value = (value ? 1 : 0);
-    else if (control.type == V4L2_CTRL_TYPE_BUTTON)
-	value = 0;
-
-    if (!control.range.involves(value))
-    {
-	std::cerr << "V4L2Camera::setValue(): out of range value["
-		  << value << "] for extended control["
-		  << control.name << "]!!" << std::endl;
-	return *this;
-    }
-
-    v4l2_ext_control	ctrl;
-    memset(&ctrl, 0, sizeof(ctrl));
-    ctrl.id    = control.feature;
-    ctrl.size  = sizeof(ctrl.value);
-    ctrl.value = value;
-    v4l2_ext_controls	ctrls;
-    memset(&ctrls, 0, sizeof(ctrls));
-    ctrls.which	   = V4L2_CTRL_ID2WHICH(ctrl.id);
-    ctrls.count	   = 1;
-    ctrls.controls = &ctrl;
-    if (ioctl(VIDIOC_S_EXT_CTRLS, &ctrls))
-	throw std::runtime_error("V4L2Camera::setValue(): VIDIOC_S_EXT_CTRLS failed for extended control["
-				 + control.name + "] and value["
-				 + std::to_string(value) + "]!! "
-				 + strerror(errno));
-
-    return *this;
-}
-
-//! 指定された拡張コントロールの現在の値を取得する
-/*!
-  \param name	拡張コントロールの名前
-  \return	現在の値
-*/
-int
-V4L2Camera::getValue(const std::string& name) const
-{
-    const auto&	control = keyToControl(name);
-
-    if (control.flags & V4L2_CTRL_FLAG_WRITE_ONLY)
-    {
-	std::cerr << "V4L2Camera::getValue(): write only feature["
-		  << control.name << "]!!" << std::endl;
-	return control.def;
-    }
-
-    v4l2_ext_controls	ctrls;
-    v4l2_ext_control	ctrl;
-    memset(&ctrls, 0, sizeof(ctrls));
-    ctrls.which	   = V4L2_CTRL_ID2WHICH(control.feature);
-    ctrls.count	   = 1;
-    ctrls.controls = &ctrl;
-    memset(&ctrl,  0, sizeof(ctrl));
-    ctrl.id   = control.feature;
-    ctrl.size = sizeof(ctrl.value);
-    if (ioctl(VIDIOC_G_EXT_CTRLS, &ctrls))
-	throw std::runtime_error("V4L2Camera::getValue(): VIDIOC_G_EXT_CTRLS failed for extended control["
-				 + control.name + "]!! " + strerror(errno));
-
-    return ctrl.value;
-}
-
-//! 指定した拡張コントロールに付けられている短縮名を取得する
-/*!
-  \param pixelFormat	拡張コントロールの名前
-  \return		拡張コントロールの短縮名
-*/
-std::string
-V4L2Camera::getShortName(const std::string& name)
-{
     std::string	sname("");
-    for (auto c : name)
+    for (auto c : featureToControl(feature).name)
 	if (isalnum(c))
 	    sname += tolower(c);
 	else if (isspace(c))
@@ -1414,17 +1347,14 @@ V4L2Camera::enumerateFormats() const
     return formats;
 }
 
-template <class CONTROL> std::vector<CONTROL>
+std::vector<V4L2Camera::Control>
 V4L2Camera::enumerateControls() const
 {
-    using ctrl_t = std::conditional_t<std::is_same_v<CONTROL, Control>,
-				      v4l2_queryctrl, v4l2_query_ext_ctrl>;
-    
   // このカメラがサポートするコントロール(属性)を列挙
-    ctrl_t	ctrl;
+    v4l2_query_ext_ctrl	ctrl;
     memset(&ctrl, 0, sizeof(ctrl));
 
-    std::vector<CONTROL>	controls;
+    std::vector<Control>	controls;
     for (u_int id = 0, ret; (ret = ioctl(id, ctrl)) == 0 || errno != EINVAL; )
     {
 	if (ret)		// ioctlがEINVALでないエラーを返したら...
@@ -1444,7 +1374,7 @@ V4L2Camera::enumerateControls() const
 
 	    if (valid)
 	    {
-		control.name	   = (char*)ctrl.name;
+		control.name	   = ctrl.name;
 		control.type	   = ctrl.type;
 		control.flags	   = ctrl.flags;
 		control.range.min  = ctrl.minimum;
@@ -1477,36 +1407,28 @@ V4L2Camera::enumerateControls() const
 }
 
 std::pair<V4L2Camera::Control, bool>
-V4L2Camera::createControl(const v4l2_queryctrl& ctrl)
+V4L2Camera::createControl(const v4l2_query_ext_ctrl& ctrl)
 {
     Control	control;
     control.feature = uintToFeature(ctrl.id);
 
-    return {control,
-	    !(ctrl.flags & V4L2_CTRL_FLAG_DISABLED)  &&
-	    !(ctrl.flags & V4L2_CTRL_FLAG_READ_ONLY) &&
-	    (control.feature != UNKNOWN_FEATURE)};
-}
-
-std::pair<V4L2Camera::ExtendedControl, bool>
-V4L2Camera::createControl(const v4l2_query_ext_ctrl& ctrl)
-{
-    ExtendedControl	control;
-    control.feature	= Feature(ctrl.id);
-    control.elem_size	= ctrl.elem_size;
-    control.elems	= ctrl.elems;
-    control.dims.resize(ctrl.nr_of_dims);
-    std::copy_n(std::begin(ctrl.dims), control.dims.size(),
-		control.dims.begin());
+    if (control.feature == UNKNOWN_FEATURE)
+    {
+	control.feature	  = Feature(ctrl.id);
+	control.elem_size = ctrl.elem_size;
+	control.elems	  = ctrl.elems;
+	control.dims.resize(ctrl.nr_of_dims);
+	std::copy_n(std::begin(ctrl.dims), control.dims.size(),
+		    control.dims.begin());
+    }
 
     return {control,
 	    !(ctrl.flags & V4L2_CTRL_FLAG_DISABLED)  &&
-	    !(ctrl.flags & V4L2_CTRL_FLAG_READ_ONLY) &&
-	    (uintToFeature(ctrl.id) == UNKNOWN_FEATURE)};
+	    !(ctrl.flags & V4L2_CTRL_FLAG_READ_ONLY)};
 }
 
-template <class CTRL> std::vector<V4L2Camera::MenuItem>
-V4L2Camera::enumerateMenuItems(const CTRL& ctrl) const
+std::vector<V4L2Camera::MenuItem>
+V4L2Camera::enumerateMenuItems(const v4l2_query_ext_ctrl& ctrl) const
 {
     v4l2_querymenu		menu;
     memset(&menu, 0, sizeof(menu));
@@ -1539,10 +1461,10 @@ V4L2Camera::pixelFormatToFormat(PixelFormat pixelFormat) const
 }
 
 const V4L2Camera::Control&
-V4L2Camera::keyToControl(Feature feature) const
+V4L2Camera::featureToControl(Feature feature) const
 {
     for (const auto& control : _controls)
-	if (control.feature != UNKNOWN_FEATURE && control.feature == feature)
+	if (control.feature == feature)
 	{
 	    if (control.flags & V4L2_CTRL_FLAG_DISABLED)
 		throw std::runtime_error("V4L2Camera::keyToControl(): disabled feature["
@@ -1558,28 +1480,6 @@ V4L2Camera::keyToControl(Feature feature) const
 			     + getName(feature) + "]!! ");
 
     return _controls[0];
-}
-
-const V4L2Camera::ExtendedControl&
-V4L2Camera::keyToControl(const std::string& name) const
-{
-    for (const auto& control : _extendedControls)
-	if (control.name == name)
-	{
-	    if (control.flags & V4L2_CTRL_FLAG_DISABLED)
-		throw std::runtime_error("V4L2Camera::keyToControl(): disabled extended control["
-					 + control.name + "]!! ");
-	  /*
-	    if (control.flags & V4L2_CTRL_FLAG_INACTIVE)
-		throw std::runtime_error("V4L2Camera::keyToControl(): inactive feature!! ");
-	  */
-	    return control;
-	}
-
-    throw std::runtime_error("V4L2Camera::keyToControl(): unknown extended control["
-			     + name + "]!! ");
-
-    return _extendedControls[0];
 }
 
 //! 指定した個数の受信用のバッファを確保し，メモリをマップしてキューに入れる
@@ -1692,18 +1592,16 @@ V4L2Camera::ioctl(int request, void* arg) const
 
 //! 指定されたコントロールIDに対応するコントロールの情報を取得する．
 /*!
-  V4L2_CTRL_FLAG_NEXT_CTRL フラグを立てて VIDIO_QUERYCTRL/VDIO_QUERY_EXT_CTRL
-  を行っている．ctrl.id に指定された ID より大きな最小の ID が返されるはず
-  であるが，そうならないbuggyなv4l2の実装が存在する．
+  V4L2_CTRL_FLAG_NEXT_CTRL フラグを立てて VDIO_QUERY_EXT_CTRL を行っている．
+  ctrl.id に指定された ID より大きな最小の ID が返されるはずであるが，
+  そうならないbuggyなv4l2の実装が存在する．
   \param id	コントロールID
   \param ctrl	コントロールの情報が返される
   \return	正常に情報が取得されたら0，エラーが生じたら非零
 */
-template <class CTRL> int
-V4L2Camera::ioctl(int id, CTRL& ctrl) const
+int
+V4L2Camera::ioctl(int id, v4l2_query_ext_ctrl& ctrl) const
 {
-    constexpr static int request = (std::is_same_v<CTRL, v4l2_queryctrl> ?
-				    VIDIOC_QUERYCTRL : VIDIOC_QUERY_EXT_CTRL);
     int	ret;
 
     for (int n = 0; n < CONTROL_IO_ERROR_RETRIES; ++n)
@@ -1711,7 +1609,7 @@ V4L2Camera::ioctl(int id, CTRL& ctrl) const
 	ctrl.id = id | V4L2_CTRL_FLAG_NEXT_CTRL;
 
       // ioctlが成功するか，I/Oエラー以外のエラーが生じたら脱出する．
-	if ((ret = ::ioctl(_fd, request, &ctrl)) == 0 ||
+	if ((ret = ::ioctl(_fd, VIDIOC_QUERY_EXT_CTRL, &ctrl)) == 0 ||
 	    (errno != EIO && errno != EPIPE && errno != ETIMEDOUT))
 	    break;
     }
@@ -1820,18 +1718,6 @@ operator <<(std::ostream& out, const V4L2Camera::Control& control)
     }
 
     return out;
-}
-
-std::ostream&
-operator <<(std::ostream& out, const V4L2Camera::ExtendedControl& control)
-{
-    out << static_cast<const V4L2Camera::Control&>(control)
-	<< "  elem_size: " << control.elem_size
-	<< "\n  elems:     " << control.elems
-	<< "\n  dims:     ";
-    for (const auto& dim : control.dims)
-	out << ' ' << dim;
-    return out << std::endl;
 }
 
 /************************************************************************
@@ -1952,24 +1838,8 @@ operator <<(YAML::Emitter& emitter, const V4L2Camera& camera)
       // 各カメラ属性の値を書き出す．
 	BOOST_FOREACH (auto feature, availableFeatures)
 	{
-	    emitter << YAML::Key   << V4L2Camera::getShortName(feature)
+	    emitter << YAML::Key   << camera.getShortName(feature)
 		    << YAML::Value << camera.getValue(feature);
-	}
-
-	emitter << YAML::EndMap;
-    }
-
-    const auto	availableExtendedControls = camera.availableExtendedControls();
-    if (availableExtendedControls.first != availableExtendedControls.second)
-    {
-	emitter << YAML::Key << "extended_controls" << YAML::Value
-		<< YAML::BeginMap;
-
-      // 各カメラ拡張コントロールの値を書き出す．
-	BOOST_FOREACH (auto name, availableExtendedControls)
-	{
-	    emitter << YAML::Key   << V4L2Camera::getShortName(name)
-		    << YAML::Value << camera.getValue(name);
 	}
 
 	emitter << YAML::EndMap;
@@ -2025,27 +1895,6 @@ operator >>(const YAML::Node& node, V4L2Camera& camera)
 		    break;
 		}
 
-  // 各カメラ拡張コントロールを読み込んでカメラに設定する．
-    if (const auto& controls = node["extended_controls"])
-	for (const auto& control : controls)
-	    BOOST_FOREACH (const auto& controlName,
-			   camera.availableExtendedControls())
-	    {
-		if (control.first.as<std::string>() ==
-		    V4L2Camera::getShortName(controlName))
-		{
-		    try
-		    {
-			camera.setValue(controlName, control.second.as<int>());
-		    }
-		    catch (const std::runtime_error& err)
-		    {
-			std::cerr << err.what() << std::endl;
-		    }
-		    break;
-		}
-	    }
-    
     return node;
 }
 

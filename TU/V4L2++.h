@@ -214,10 +214,8 @@ class V4L2Camera
 	int			def;		//!< デフォルト値
 	u_int			flags;
 	std::vector<MenuItem>	menuItems;
-    };
 
-    struct ExtendedControl : public Control	//! 拡張コントロール
-    {
+      // 拡張コントロール
 	u_int			elem_size;
 	u_int			elems;
 	std::vector<u_int>	dims;
@@ -262,12 +260,6 @@ class V4L2Camera
     typedef MemberIterator<Feature, Control>		FeatureIterator;
   //! 属性の範囲を表す反復子のペア
     typedef std::pair<FeatureIterator, FeatureIterator>	FeatureRange;
-  //! 拡張コントロールを指す反復子
-    typedef MemberIterator<std::string, ExtendedControl>
-							ExtendedControlIterator;
-  //! 拡張コントロールの範囲を表す反復子のペア
-    typedef std::pair<ExtendedControlIterator, ExtendedControlIterator>
-							ExtendedControlRange;
   //! タイムスタンプを記述するクロック
     typedef std::chrono::system_clock			clock_t;
   //! 画像到着時刻を記述するクロック
@@ -315,31 +307,16 @@ class V4L2Camera
 
   // Feature stuffs.
     FeatureRange	availableFeatures()			const	;
+    MenuItemRange	availableMenuItems(Feature feature)	const	;
     bool		isAvailable(Feature feature)		const	;
     V4L2Camera&		setValue(Feature feature, int value)		;
     int			getValue(Feature feature)		const	;
-    static std::string	getShortName(Feature feature)			;
-
-  // ExtendedControl stuffs.
-    ExtendedControlRange
-			availableExtendedControls()		const	;
-    bool		isAvailable(const std::string& name)	const	;
-    V4L2Camera&		setValue(const std::string& name, int value)	;
-    int			getValue(const std::string& name)	const	;
-    static std::string	getShortName(const std::string& name)		;
-    
-  // Feature/ExtendedControl stuffs.
-    template <class KEY>
-    MenuItemRange	availableMenuItems(const KEY& key)	const	;
-    template <class KEY>
-    void		getMinMaxStep(const KEY& key, int& min,
+    const std::string&	getName(Feature feature)		const	;
+    std::string		getShortName(Feature feature)		const	;
+    void		getMinMaxStep(Feature feature, int& min,
 				      int& max, int& step)	const	;
-    template <class KEY>
-    int			getDefaultValue(const KEY& key)		const	;
-    template <class KEY>
-    const std::string&	getName(const KEY& key)			const	;
-    template <class KEY>
-    std::ostream&	put(std::ostream& out, const KEY& key)	const	;
+    int			getDefaultValue(Feature feature)	const	;
+    std::ostream&	put(std::ostream& out, Feature feature)	const	;
 
   // Capture stuffs.
     V4L2Camera&		continuousShot(bool enable)			;
@@ -363,19 +340,16 @@ class V4L2Camera
 
   private:
     std::vector<Format>	enumerateFormats()			const	;
-    template <class CONTROL> std::vector<CONTROL>
+    std::vector<Control>
 			enumerateControls()			const	;
-    template <class CTRL> std::vector<MenuItem>
-			enumerateMenuItems(const CTRL& ctrl)	const	;
+    std::vector<MenuItem>
+			enumerateMenuItems(
+			    const v4l2_query_ext_ctrl& ctrl)	const	;
     static std::pair<Control, bool>
-			createControl(const v4l2_queryctrl& ctrl)	;
-    static std::pair<ExtendedControl, bool>
 			createControl(const v4l2_query_ext_ctrl& ctrl)	;
     const Format&	pixelFormatToFormat(PixelFormat pixelFormat)
 								const	;
-    const Control&	keyToControl(Feature feature)		const	;
-    const ExtendedControl&
-			keyToControl(const std::string& name)	const	;
+    const Control&	featureToControl(Feature feature)	const	;
 
     void		mapBuffers(u_int n)				;
     void		unmapBuffers()					;
@@ -384,22 +358,18 @@ class V4L2Camera
     u_int		dequeueBuffer()					;
 
     int			ioctl(int request, void* arg)		const	;
-    template <class CTRL>
-    int			ioctl(int id, CTRL& ctrl)		const	;
+    int			ioctl(int id, v4l2_query_ext_ctrl& ctrl) const	;
 
     friend std::ostream&
 	operator <<(std::ostream& out, const Format& format)		;
     friend std::ostream&
 	operator <<(std::ostream& out, const Control& control)		;
-    friend std::ostream&
-	operator <<(std::ostream& out, const ExtendedControl& control)	;
 
   private:
     int					_fd;
     std::string				_dev;
     std::vector<Format>			_formats;
     std::vector<Control>		_controls;
-    std::vector<ExtendedControl>	_extendedControls;
     size_t				_width;
     size_t				_height;
     PixelFormat				_pixelFormat;
@@ -495,39 +465,40 @@ V4L2Camera::availableFeatures() const
     return std::make_pair(_controls.begin(), _controls.end());
 }
 
-//! このカメラで利用できる拡張コントロールの範囲を取得する
-/*!
-  \return	拡張コントロール名を指す定数反復子のペア
-*/
-inline V4L2Camera::ExtendedControlRange
-V4L2Camera::availableExtendedControls() const
-{
-    return std::make_pair(_extendedControls.begin(), _extendedControls.end());
-}
-
 //! この属性/拡張コントロールで利用できるメニュー項目の範囲を取得する
 /*!
-  \param key	属性または拡張コントロール名
-  \return	メニュー項目(#MenuItem)を指す定数反復子のペア
+  \param feature	対象となる属性
+  \return		メニュー項目(#MenuItem)を指す定数反復子のペア
 */
-template <class KEY> V4L2Camera::MenuItemRange
-V4L2Camera::availableMenuItems(const KEY& key) const
+inline V4L2Camera::MenuItemRange
+V4L2Camera::availableMenuItems(Feature feature) const
 {
-    const auto&	control = keyToControl(key);
+    const auto&	control = featureToControl(feature);
     return std::make_pair(control.menuItems.begin(), control.menuItems.end());
+}
+
+//! 指定した属性/拡張コントロールに付けられている名前を取得する
+/*!
+  \param feature	対象となる属性
+  \return		属性の名前
+*/
+inline const std::string&
+V4L2Camera::getName(Feature feature) const
+{
+    return featureToControl(feature).name;
 }
 
 //! 指定された属性/拡張コントロールがとり得る値の範囲と変化刻みを取得する
 /*!
-  \param key	対象となる属性
+  \param feature	対象となる属性
   \param min		とり得る値の最小値が返される.
   \param max		とり得る値の最大値が返される.
   \param step		値の変化刻みが返される.
 */
-template <class KEY> void
-V4L2Camera::getMinMaxStep(const KEY& key, int& min, int& max, int& step) const
+inline void
+V4L2Camera::getMinMaxStep(Feature feature, int& min, int& max, int& step) const
 {
-    const auto&	control = keyToControl(key);
+    const auto&	control = featureToControl(feature);
 
     min  = control.range.min;
     max  = control.range.max;
@@ -539,33 +510,22 @@ V4L2Camera::getMinMaxStep(const KEY& key, int& min, int& max, int& step) const
   \param feature	対象となる属性
   \return		デフォルト値
 */
-template <class KEY> int
-V4L2Camera::getDefaultValue(const KEY& key) const
+inline int
+V4L2Camera::getDefaultValue(Feature feature) const
 {
-    return keyToControl(key).def;
+    return featureToControl(feature).def;
 }
 
-//! 指定した属性/拡張コントロールに付けられている名前を取得する
+//! 指定された属性の内容を出力する
 /*!
-  \param key	対象となる属性
-  \return	属性の名前
+  \param out		出力ストリーム
+  \param feature	属性
+  \return		outで指定した出力ストリーム
 */
-template <class KEY> const std::string&
-V4L2Camera::getName(const KEY& key) const
+inline std::ostream&
+V4L2Camera::put(std::ostream& out, Feature feature) const
 {
-    return keyToControl(key).name;
-}
-
-//! 指定された属性/拡張コントロールの内容を出力する
-/*!
-  \param out	出力ストリーム
-  \param key	属性または拡張コントロール名
-  \return	outで指定した出力ストリーム
-*/
-template <class KEY> std::ostream&
-V4L2Camera::put(std::ostream& out, const KEY& key) const
-{
-    return out << keyToControl(key);
+    return out << featureToControl(feature);
 }
 
 //! カメラから画像を出力中であるか調べる
@@ -656,13 +616,6 @@ V4L2Camera::MemberIterator<V4L2Camera::Feature,
 			   V4L2Camera::Control>::dereference() const
 {
     return base_reference()->feature;
-}
-
-template <> inline const std::string&
-V4L2Camera::MemberIterator<std::string, 
-			   V4L2Camera::ExtendedControl>::dereference() const
-{
-    return base_reference()->name;
 }
 
 //! 指定した画像サイズのもとでこのカメラで利用できるフレームレートの範囲を取得する

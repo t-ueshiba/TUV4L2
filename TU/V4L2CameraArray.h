@@ -108,14 +108,9 @@ setFeature(CAMERAS&& cameras, u_int id, int val)
     -> std::enable_if_t<
 	   std::is_convertible<value_t<CAMERAS>, V4L2Camera>::value, bool>
 {
-    const auto	feature = V4L2Camera::uintToFeature(id);
-
-    if (feature == V4L2Camera::UNKNOWN_FEATURE)
-	return false;
-
     std::for_each(std::begin(cameras), std::end(cameras),
-		  [feature, val](auto& camera)
-		  { camera.setValue(feature, val); });
+		  [id, val](auto& camera)
+		  { camera.setValue(V4L2Camera::Feature(id), val); });
 
     return true;
 }
@@ -129,12 +124,7 @@ setFeature(V4L2Camera& camera, u_int id, int val)
 inline bool
 getFeature(const V4L2Camera& camera, u_int id, int& val)
 {
-    const auto	feature = V4L2Camera::uintToFeature(id);
-
-    if (feature == V4L2Camera::UNKNOWN_FEATURE)
-	return false;
-
-    val = camera.getValue(feature);
+    val = camera.getValue(V4L2Camera::Feature(id));
 
     return true;
 }
