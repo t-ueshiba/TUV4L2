@@ -142,6 +142,8 @@ class V4L2Camera
     template <class T>
     struct Range
     {
+	std::string	getName()				const	;
+	
       //! 与えられた値がこの範囲に納まっているか調べる
       /*!
 	\param val	値
@@ -161,6 +163,8 @@ class V4L2Camera
   //! フレームレート
     struct FrameRate
     {
+	std::string		getName()			const	;
+	
 	Range<u_int>		fps_n;		//!< 分子
 	Range<u_int>		fps_d;		//!< 分母
     };
@@ -173,8 +177,9 @@ class V4L2Camera
   //! 画像サイズ
     struct FrameSize
     {
+	std::string		getName()			const	;
 	FrameRateRange		availableFrameRates()		const	;
-
+	
 	Range<size_t>		width;		//!< 画像の幅
 	Range<size_t>		height;		//!< 画像の高さ
 	std::vector<FrameRate>	frameRates;	//!< フレームレート
@@ -618,6 +623,32 @@ V4L2Camera::MemberIterator<V4L2Camera::Feature,
     return base_reference()->feature;
 }
 
+template <class T> std::string
+V4L2Camera::Range<T>::getName() const
+{
+    if (min == max)
+	return std::to_string(min);
+    else
+	return '[' + std::to_string(min) + ',' + std::to_string(max)
+	     + ':' + std::to_string(step) + ']';
+}
+
+inline std::string
+V4L2Camera::FrameRate::getName() const
+{
+    return fps_n.getName() + '/' + fps_d.getName();
+}
+
+//! 画像サイズの名前を取得する
+/*!
+  \return	画像サイズの名前
+*/
+inline std::string
+V4L2Camera::FrameSize::getName() const
+{
+    return width.getName() + 'x' + height.getName();
+}
+
 //! 指定した画像サイズのもとでこのカメラで利用できるフレームレートの範囲を取得する
 /*!
   \return	フレームレート(#FrameRate)を指す定数反復子のペア
@@ -631,19 +662,87 @@ V4L2Camera::FrameSize::availableFrameRates() const
 /************************************************************************
 *  global functions							*
 ************************************************************************/
-template <class T>
-std::ostream&	operator <<(std::ostream& out,
-			    const typename V4L2Camera::Range<T>& range)	;
-std::ostream&	operator <<(std::ostream& out,
-			    const V4L2Camera::FrameSize& frameSize)	;
-std::ostream&	operator <<(std::ostream& out,
-			    const V4L2Camera::FrameRate& frameRate)	;
-std::ostream&	operator <<(std::ostream& out,
-			    const V4L2Camera::MenuItem& menuItem)	;
-std::ostream&	operator <<(std::ostream& out, const V4L2Camera& camera);
-YAML::Emitter&	operator <<(YAML::Emitter& out, const V4L2Camera& camera);
-std::istream&	operator >>(std::istream& in, V4L2Camera& camera)	;
+YAML::Emitter&
+operator <<(YAML::Emitter& in, const V4L2Camera& camera)		;
+
 const YAML::Node&
-		operator >>(const YAML::Node& node, V4L2Camera& camera)	;
+operator >>(const YAML::Node& node, V4L2Camera& camera)			;
+
+//! 値の範囲を出力ストリームに出力する
+/*
+  \param out	出力ストリーム
+  \param range	値の範囲
+  \return	outで指定した出力ストリーム
+*/
+template <class T> inline std::ostream&
+operator <<(std::ostream& out, const typename V4L2Camera::Range<T>& range)
+{
+    return out << range.getName();
+}
+
+//! 画像サイズを出力ストリームに出力する
+/*
+  \param out		出力ストリーム
+  \param frameSize	画像サイズ
+  \return		outで指定した出力ストリーム
+*/
+inline std::ostream&
+operator <<(std::ostream& out, const V4L2Camera::FrameSize& frameSize)
+{
+    return out << frameSize.getName();
+}
+
+//! フレームレートを出力ストリームに出力する
+/*
+  \param out		出力ストリーム
+  \param frameRate	フレームレート
+  \return		outで指定した出力ストリーム
+*/
+inline std::ostream&
+operator <<(std::ostream& out, const V4L2Camera::FrameRate& frameRate)
+{
+    return out << frameRate.getName();
+}
+
+//! メニュー項目を出力ストリームに出力する
+/*
+  \param out		出力ストリーム
+  \param menuItem	メニュー項目
+  \return		outで指定した出力ストリーム
+*/
+inline std::ostream&
+operator <<(std::ostream& out, const V4L2Camera::MenuItem& menuItem)
+{
+    return out << menuItem.index << ": " << menuItem.name;
+}
+
+//! 現在のカメラの設定をストリームに書き出す
+/*!
+  \param out		出力ストリーム
+  \param camera		対象となるカメラ
+  \return		outで指定した出力ストリーム
+*/
+inline std::ostream&
+operator <<(std::ostream& out, const V4L2Camera& camera)
+{
+    YAML::Emitter	emitter;
+    emitter << camera;
+    return out << emitter.c_str() << std::endl;
+}
+
+//! ストリームから読み込んだ設定をカメラにセットする
+/*!
+  \param in		入力ストリーム
+  \param camera		対象となるカメラ
+  \return		inで指定した入力ストリーム
+*/
+inline std::istream&
+operator >>(std::istream& in, V4L2Camera& camera)
+{
+    const auto	node = YAML::Load(in);
+    node >> camera;
+    return in;
+}
+
 }
 #endif	// !TU_V4L2PP_H

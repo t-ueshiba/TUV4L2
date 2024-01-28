@@ -160,20 +160,18 @@ CmdPane::addFormatAndFeatureCmds(V4L2Camera& camera)
 		{
 		    frameRateMenu = new QMenu(frameSizeMenu);
 
-		    std::ostringstream	s;
-		    s << frameSize;
-		    const auto	frameSizeAction = new QAction(
-							tr(s.str().c_str()),
-							frameSizeMenu);
+		    const auto	frameSizeAction
+					= new QAction(
+					    tr(frameSize.getName().c_str()),
+					    frameSizeMenu);
 		    frameSizeAction->setMenu(frameRateMenu);
 		    frameSizeMenu->addAction(frameSizeAction);
 		}
 
-		std::ostringstream	s;
-		s << frameRate;
-		const auto	frameRateAction = new QAction(
-							tr(s.str().c_str()),
-							frameRateMenu);
+		const auto	frameRateAction
+					= new QAction(
+					    tr(frameRate.getName().c_str()),
+					    frameRateMenu);
 		frameRateMenu->addAction(frameRateAction);
 		_pane->connect(
 		    frameRateAction, &QAction::triggered,
