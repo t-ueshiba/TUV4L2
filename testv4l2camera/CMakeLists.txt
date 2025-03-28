@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 3.5)
 project(testv4l2camera)
 
 enable_language(CXX)
-set(CMAKE_CXX_STANDARD		17)
+set(CMAKE_CXX_STANDARD		20)
 set(CMAKE_CXX_STANDARD_REQUIRED	ON)
 set(CMAKE_CXX_EXTENSIONS	OFF)
 set(CMAKE_CXX_FLAGS_RELEASE	"-Wall -O3")
